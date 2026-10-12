@@ -5,10 +5,20 @@
     "build": "esbuild ./frontend/src/main.jsx --bundle --minify --outfile=./static/react-app.js --loader:.css=empty"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
+    "@netlify/blobs": "^11.1.4",
+    "@netlify/database": "^2.0.1",
+    "drizzle-orm": "^1.0.0-beta.22",
+    "jose": "^6.2.12",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "unpdf": "^1.8.1"
   },
   "devDependencies": {
-    "esbuild": "^0.25.5"
+    "@netlify/functions": "^6.0.2",
+    "@types/node": "^26.6.5",
+    "drizzle-kit": "^1.0.0-beta.22",
+    "esbuild": "^0.25.5",
+    "typescript": "^7.0.2"
   }
 }
