@@ -1,93 +1,12 @@
-import hashlib
 import secrets
 import re
-from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, current_app, flash, jsonify, redirect, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from database.models import connection
-from routes.react_view import render_react_page
 
 auth_bp = Blueprint("auth", __name__)
-RESET_MESSAGE = "If that email belongs to a password-enabled account and email delivery is configured, a password reset link will be sent shortly."
-
-
-def _reset_token_record(token, db):
-    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
-    return db.execute(
-        """SELECT id,user_id FROM password_reset_tokens
-           WHERE token_hash=? AND used_at='' AND expires_at>?""",
-        (token_hash, datetime.now(timezone.utc).isoformat()),
-    ).fetchone(), token_hash
-
-
-@auth_bp.route("/forgot-password", methods=["GET", "POST"])
-def forgot_password():
-    if request.method == "POST":
-        email = request.form.get("email", "").strip().casefold()[:254]
-        if re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
-            now = datetime.now(timezone.utc)
-            with connection(current_app.config["DATABASE_PATH"]) as db:
-                user = db.execute("SELECT id FROM users WHERE email=? COLLATE NOCASE", (email,)).fetchone()
-                if user:
-                    recent = db.execute(
-                        "SELECT created_at FROM password_reset_tokens WHERE user_id=? ORDER BY id DESC LIMIT 1",
-                        (user["id"],),
-                    ).fetchone()
-                    last_sent = datetime.fromisoformat(recent["created_at"]) if recent else None
-                    if not last_sent or now - last_sent >= timedelta(minutes=1):
-                        token = secrets.token_urlsafe(32)
-                        db.execute("DELETE FROM password_reset_tokens WHERE user_id=? AND used_at=''", (user["id"],))
-                        db.execute(
-                            """INSERT INTO password_reset_tokens(user_id,token_hash,created_at,expires_at)
-                               VALUES(?,?,?,?)""",
-                            (user["id"], hashlib.sha256(token.encode("utf-8")).hexdigest(),
-                             now.isoformat(), (now + timedelta(minutes=60)).isoformat()),
-                        )
-                    else:
-                        token = ""
-            # Supabase auth - no email sent, token generated locally if needed
-            flash("Password reset token generated. Share the token with the user via secure channel.", "info")
-        flash(RESET_MESSAGE, "success")
-        return redirect(url_for("auth.forgot_password"))
-    return render_react_page("forgot_password")
-
-
-@auth_bp.route("/reset-password/<token>", methods=["GET", "POST"])
-def reset_password(token):
-    if len(token) > 200:
-        return render_react_page("reset_password", token="", valid=False)
-    if request.method == "POST":
-        password = request.form.get("password", "")
-        confirmation = request.form.get("confirm_password", "")
-        if len(password) < 10 or len(password) > 128:
-            flash("Use a password between 10 and 128 characters.", "error")
-        elif password != confirmation:
-            flash("The password entries do not match.", "error")
-        else:
-            now = datetime.now(timezone.utc).isoformat()
-            with connection(current_app.config["DATABASE_PATH"]) as db:
-                record, token_hash = _reset_token_record(token, db)
-                if record:
-                    consumed = db.execute(
-                        "UPDATE password_reset_tokens SET used_at=? WHERE id=? AND used_at=''",
-                        (now, record["id"]),
-                    )
-                    if consumed.rowcount:
-                        db.execute("UPDATE users SET password_hash=? WHERE id=?",
-                                   (generate_password_hash(password), record["user_id"]))
-                        db.execute("DELETE FROM password_reset_tokens WHERE user_id=? AND id<>?",
-                                   (record["user_id"], record["id"]))
-                        session.clear()
-                        session["user_id"] = record["user_id"]
-                        flash("Your password has been reset. You can now sign in.", "success")
-                        return redirect(url_for("index"))
-            flash("This password reset link is invalid or has expired. Request a new link.", "error")
-            return render_react_page("reset_password", token="", valid=False)
-    with connection(current_app.config["DATABASE_PATH"]) as db:
-        record, _token_hash = _reset_token_record(token, db)
-    return render_react_page("reset_password", token=token, valid=bool(record))
 
 
 @auth_bp.post("/register")
@@ -113,9 +32,6 @@ def register():
             session.clear()
             session["user_id"] = cursor.lastrowid
             session["email"] = email
-            # Mark email as verified since we're disabling mail verification
-            db.execute("UPDATE users SET verified_at=? WHERE id=?", 
-                      (datetime.now(timezone.utc).isoformat(), cursor.lastrowid))
     except Exception:
         flash("That account could not be created. The email may already be registered.", "error")
         return redirect(url_for("index"))

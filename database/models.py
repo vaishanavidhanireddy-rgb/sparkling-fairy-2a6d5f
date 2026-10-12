@@ -13,19 +13,8 @@ def init_db(path):
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     email TEXT NOT NULL UNIQUE,
                     password_hash TEXT NOT NULL,
-                    verified_at TEXT NOT NULL DEFAULT '',
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
-                CREATE TABLE IF NOT EXISTS password_reset_tokens (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                    token_hash TEXT NOT NULL UNIQUE,
-                    created_at TEXT NOT NULL,
-                    expires_at TEXT NOT NULL,
-                    used_at TEXT NOT NULL DEFAULT ''
-                );
-                CREATE INDEX IF NOT EXISTS password_reset_user_expiry
-                    ON password_reset_tokens(user_id,expires_at);
                 CREATE TABLE IF NOT EXISTS reports (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -157,8 +146,6 @@ def init_db(path):
                 db.execute("ALTER TABLE users ADD COLUMN area TEXT")
             if "country" not in columns:
                 db.execute("ALTER TABLE users ADD COLUMN country TEXT NOT NULL DEFAULT 'India'")
-            if "verified_at" not in columns:
-                db.execute("ALTER TABLE users ADD COLUMN verified_at TEXT NOT NULL DEFAULT ''")
             report_columns = {row[1] for row in db.execute("PRAGMA table_info(reports)")}
             if "explanation" not in report_columns:
                 db.execute("ALTER TABLE reports ADD COLUMN explanation TEXT NOT NULL DEFAULT ''")

@@ -27,7 +27,6 @@ def common_urls():
         "history": url_for("reports.history"), "settings": url_for("reports.settings"),
         "appointments": url_for("appointments.directory"), "logout": url_for("auth.logout"),
         "login": url_for("auth.login"), "register": url_for("auth.register"),
-        "forgotPassword": url_for("auth.forgot_password"),
         "profile": url_for("reports.complete_profile"),
         "google": url_for("auth.google_login"),
         "states": url_for("appointments.api_states"), "districts": url_for("appointments.api_districts"),
@@ -53,8 +52,7 @@ def common_urls():
 def render_react_page(view, **context):
     props = _json_value(context)
     props.update(view=view, email=session.get("email", ""), urls=common_urls(),
-                 flashes=get_flashed_messages(with_categories=True),
-                 human_made="my webappmplaugarism as human made")
+                 flashes=get_flashed_messages(with_categories=True))
     return render_template("react.html", react_props=props)
 
 

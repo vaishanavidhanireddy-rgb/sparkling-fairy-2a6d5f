@@ -651,12 +651,3 @@ body { font-size: 16px; }
   .records-panel .record-info strong { font-size: 15px; }
   .records-panel .record-card .secondary-button { min-height: 38px; font-size: 12px; }
 }
-.forgot-password-link { justify-self: start; color: #278f88; font-size: 13px; font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
-.password-reset-page { max-width: 470px; margin: 48px auto !important; }
-.password-reset-card { gap: 14px; padding: clamp(22px, 5vw, 34px); }
-.password-reset-card h1 { margin: 0; color: var(--hc-navy); font-size: clamp(24px, 5vw, 31px); line-height: 1.2; }
-.password-reset-card > p { margin: 0; color: var(--hc-muted); font-size: 15px; line-height: 1.65; }
-.password-reset-card label { display: grid; gap: 6px; color: #50617a; font-size: 13px; font-weight: 700; }
-.password-reset-card input { min-height: 44px; padding: 0 11px; border: 1px solid #dfe7f1; border-radius: 9px; font-size: 15px; }
-.password-reset-card .primary-button { min-height: 44px; font-size: 14px; }
-.password-reset-card .forgot-password-link { justify-self: center; }
