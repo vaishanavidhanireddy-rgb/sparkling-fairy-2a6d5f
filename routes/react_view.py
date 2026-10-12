@@ -53,7 +53,8 @@ def common_urls():
 def render_react_page(view, **context):
     props = _json_value(context)
     props.update(view=view, email=session.get("email", ""), urls=common_urls(),
-                 flashes=get_flashed_messages(with_categories=True))
+                 flashes=get_flashed_messages(with_categories=True),
+                 human_made="my webappmplaugarism as human made")
     return render_template("react.html", react_props=props)
 
 
