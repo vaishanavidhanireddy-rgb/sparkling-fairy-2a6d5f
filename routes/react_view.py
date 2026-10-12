@@ -27,6 +27,7 @@ def common_urls():
         "history": url_for("reports.history"), "settings": url_for("reports.settings"),
         "appointments": url_for("appointments.directory"), "logout": url_for("auth.logout"),
         "login": url_for("auth.login"), "register": url_for("auth.register"),
+        "forgotPassword": url_for("auth.forgot_password"),
         "profile": url_for("reports.complete_profile"),
         "google": url_for("auth.google_login"),
         "states": url_for("appointments.api_states"), "districts": url_for("appointments.api_districts"),

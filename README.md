@@ -59,6 +59,8 @@ python app.py
 
 Open http://127.0.0.1:5000. Set a long random `SECRET_KEY` and your `MISTRAL_API_KEY` in `.env` before using AI features. The default Mistral model is `ministral-14b-latest`; override it with `MISTRAL_MODEL` if needed. The app displays an explicit configuration message when the AI key is missing. Google sign-in is optional and requires the Firebase settings described in `FIREBASE_SETUP.md`.
 
+Password reset uses a one-time link that expires after 60 minutes. To deliver reset emails, configure `PUBLIC_BASE_URL`, `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS`, `MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_DEFAULT_SENDER` in `.env` with your SMTP provider's values. Without SMTP configuration the UI still responds safely, but no email can be delivered.
+
 PDF text extraction uses pypdf. Image OCR uses the Tesseract executable; install Tesseract OCR separately and ensure `tesseract.exe` is on PATH. The AI provider may still read image or PDF files when local extraction returns no text.
 
 Uploads are limited to 2 MB and PDF/JPG/PNG signatures are checked. Report contents and AI explanations are stored in the existing local SQLite database, scoped to the signed-in user. Keep that database private and back it up securely.
