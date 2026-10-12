@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quantum Healthcare</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main class="shell">
+  <header><span class="brand">QH</span><span>Quantum Healthcare</span></header>
+  <section class="hero">
+    <p class="eyebrow">PRIVATE HEALTH RECORD WORKSPACE</p>
+    <h1>Your reports,<br><em>organized thoughtfully.</em></h1>
+    <p class="muted">A small educational prototype for storing and comparing report text. It does not diagnose conditions.</p>
+  </section>
+  {% for category, message in get_flashed_messages(with_categories=true) %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}
+  <section class="auth-grid">
+    <form class="card" method="post" action="{{ url_for('auth.login') }}">
+      <h2>Welcome back</h2>
+      {% if firebase_config %}
+      <button class="google-button" id="google-sign-in" type="button">Continue with Google</button>
+      <p id="google-error" class="auth-error" role="alert" aria-live="polite"></p>
+      <div class="divider"><span>or use email</span></div>
+      {% endif %}
+      <label>Email<input type="email" name="email" required autocomplete="email"></label>
+      <label>Password<input type="password" name="password" required autocomplete="current-password"></label>
+      <button>Sign in</button>
+    </form>
+    <form class="card" method="post" action="{{ url_for('auth.register') }}">
+      <h2>Create account</h2>
+      <label>Email<input type="email" name="email" required autocomplete="email"></label>
+      <label>Password <small>(10 characters minimum)</small><input type="password" name="password" required minlength="10" autocomplete="new-password"></label>
+      <label>Patient phone number <small>(include country code)</small><input type="tel" name="phone" required placeholder="+919876543210" pattern="\+[1-9][0-9]{7,14}" autocomplete="tel"></label>
+      <label>Country<input name="country" value="India" required autocomplete="country-name"></label>
+      <label>State<input name="state" required maxlength="100" placeholder="e.g. Maharashtra" autocomplete="address-level1"></label>
+      <label>Area / city<input name="area" required maxlength="100" placeholder="e.g. Pune" autocomplete="address-level2"></label>
+      <button class="secondary">Create account</button>
+    </form>
+  </section>
+  <footer>Demo only · Do not enter urgent or highly sensitive medical information.</footer>
+  <p class="muted"><a href="{{ url_for('hospitals.register_hospital') }}">Hospital registration</a></p>
+</main>
+{% if firebase_config %}
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
+  import { getAuth, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+
+  const firebaseApp = initializeApp({{ firebase_config|tojson }});
+  const auth = getAuth(firebaseApp);
+  const provider = new GoogleAuthProvider();
+  const button = document.getElementById('google-sign-in');
+  const errorBox = document.getElementById('google-error');
+
+  button.addEventListener('click', async () => {
+    button.disabled = true;
+    errorBox.textContent = '';
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+      const response = await fetch('{{ url_for("auth.google_login") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Google sign-in failed.');
+      window.location.assign(data.needsProfile ? '{{ url_for("reports.complete_profile") }}' : '{{ url_for("reports.dashboard") }}');
+    } catch (error) {
+      errorBox.textContent = error.message || 'Google sign-in failed. Please try again.';
+      button.disabled = false;
+    }
+  });
+</script>
+{% endif %}
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

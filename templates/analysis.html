@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compare reports | Quantum Healthcare</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body><main class="shell">
+  <header><a class="brand" href="{{ url_for('reports.dashboard') }}">QH</a><span>Quantum Healthcare</span><span class="spacer"></span><a href="{{ url_for('reports.dashboard') }}">Dashboard</a></header>
+  <section class="page-heading"><p class="eyebrow">EXPERIMENTAL QUANTUM TOOL</p><h1>Compare reports</h1><p class="muted">This demo finds shared words, then uses a small simulated quantum search to select recurring terms. It does not understand medical meaning or make clinical recommendations.</p></section>
+  {% if not consent %}<div class="notice error">Enable analysis consent on the dashboard before comparing reports.</div>
+  {% elif reports|length < 2 %}<div class="notice">Add at least two reports before comparing.</div>
+  {% else %}<form class="card compare-form" method="post">
+    <label>First report<select name="first">{% for report in reports %}<option value="{{ report.id }}">{{ report.title }}</option>{% endfor %}</select></label>
+    <label>Second report<select name="second">{% for report in reports %}<option value="{{ report.id }}">{{ report.title }}</option>{% endfor %}</select></label>
+    <button>Compare with quantum simulation</button>
+  </form>{% endif %}
+
+  {% if result %}<section class="card result">
+    <p class="eyebrow">CLASSICAL TEXT OVERLAP</p><strong class="score">{{ result.similarity }}<small>%</small></strong>
+    <p>{{ result.note }}</p>
+    <p><strong>Shared terms:</strong> {{ result.shared_terms|join(', ') if result.shared_terms else 'None found' }}</p>
+    {% if result.quantum.ran %}
+    <div class="quantum-summary"><p class="eyebrow">QUANTUM CIRCUIT SIMULATION</p>
+      <p><strong>Backend:</strong> {{ result.quantum.simulator }}</p>
+      <p><strong>Algorithm:</strong> {{ result.quantum.algorithm }} · {{ result.quantum.qubits }} qubits · {{ result.quantum.iterations }} Grover iteration(s) · {{ result.quantum.shots }} shots</p>
+      <p><strong>Search space:</strong> {{ result.quantum.candidate_count }} candidate terms; {{ result.quantum.marked_count }} top term(s) marked by classical overlap score.</p>
+      <p><strong>Features selected by measurements:</strong> {{ result.selected_features|join(', ') if result.selected_features else 'No valid candidate was measured' }}</p>
+      {% if result.quantum.measurements %}<ul class="measurement-list">{% for item in result.quantum.measurements %}<li><strong>{{ item.term }}</strong>: {{ item.count }} measurements ({{ (item.probability * 100)|round(1) }}%)</li>{% endfor %}</ul>{% endif %}
+      <details><summary>View quantum circuit</summary><pre class="circuit-diagram">{{ result.quantum.circuit }}</pre></details>
+    </div>
+    {% endif %}
+    <p class="muted">{{ result.method }}</p>
+  </section>{% endif %}
+  <footer>Educational simulation only. It uses your local CPU, not quantum hardware, and is not for medical interpretation.</footer>
+</main></body>
+</html>

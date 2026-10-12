@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hospitals in your area | Quantum Healthcare</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body><main class="shell">
+  <header><a class="brand" href="{{ url_for('reports.dashboard') }}">QH</a><span>Hospital directory</span><span class="spacer"></span><a href="{{ url_for('reports.dashboard') }}">Dashboard</a></header>
+  <section class="page-heading"><p class="eyebrow">REGISTERED HOSPITALS</p><h1>Your area</h1>
+    {% if patient and patient.state and patient.area %}<p class="muted">{{ patient.area }}, {{ patient.state }}, {{ patient.country or 'India' }}</p>{% else %}<p class="muted">Set your state and area on the dashboard to see matching listings.</p>{% endif %}
+  </section>
+  {% if patient and patient.state and patient.area %}
+    {% if hospitals %}<section class="hospital-grid">{% for hospital in hospitals %}<article class="card hospital-card">
+      <p class="eyebrow">APPROVED LISTING</p><h2>{{ hospital.name }}</h2><p>{{ hospital.address }}</p>
+      <p><a href="tel:{{ hospital.phone }}">{{ hospital.phone }}</a></p><p><a href="mailto:{{ hospital.email }}">{{ hospital.email }}</a></p>
+      {% if hospital.website %}<p><a href="{{ hospital.website }}" target="_blank" rel="noopener noreferrer">Hospital website</a></p>{% endif %}
+    </article>{% endfor %}</section>
+    {% else %}<div class="notice">No approved hospital listings are registered for this area yet. Ask a local hospital to register.</div>{% endif %}
+  {% endif %}
+  <p class="muted directory-note">Listings are supplied by hospitals and reviewed by the app administrator. This directory may not include every hospital and is not an emergency service.</p>
+  <p><a class="button-link" href="{{ url_for('hospitals.register_hospital') }}">Register a hospital</a></p>
+  <footer>Hospital listings are not medical recommendations. For emergencies, contact local emergency services.</footer>
+</main></body>
+</html>

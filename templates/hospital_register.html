@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hospital registration | Quantum Healthcare</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body><main class="shell">
+  <header><a class="brand" href="{{ url_for('index') }}">QH</a><span>Hospital registration</span></header>
+  {% for category, message in get_flashed_messages(with_categories=true) %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}
+  {% if submitted %}<section class="card page-heading"><h1>Submission received</h1><p class="muted">The listing will appear in the directory after administrator review.</p><a class="button-link" href="{{ url_for('index') }}">Return to sign in</a></section>
+  {% else %}<section class="page-heading"><p class="eyebrow">JOIN THE DIRECTORY</p><h1>Register your hospital</h1><p class="muted">Listings are checked by an administrator before patients can see them.</p></section>
+  <form class="card hospital-form" method="post">
+    <label>Hospital name<input name="name" required maxlength="160" value="{{ values.name if values else '' }}"></label>
+    <label>Contact email<input type="email" name="email" required maxlength="254" value="{{ values.email if values else '' }}"></label>
+    <label>Contact phone <small>(include country code)</small><input type="tel" name="phone" required placeholder="+919876543210" pattern="\+[1-9][0-9]{7,14}" value="{{ values.phone if values else '' }}"></label>
+    <label>Country<input name="country" value="{{ values.country if values else 'India' }}" required></label>
+    <label>State<input name="state" required maxlength="100" value="{{ values.state if values else '' }}"></label>
+    <label>Area / city<input name="area" required maxlength="100" value="{{ values.area if values else '' }}"></label>
+    <label>Street address<input name="address" required maxlength="500" value="{{ values.address if values else '' }}"></label>
+    <label>Website (optional)<input type="url" name="website" placeholder="https://example.org" maxlength="300" value="{{ values.website if values else '' }}"></label>
+    <button>Submit for review</button>
+  </form>{% endif %}
+  <footer>Only provide official hospital contact details. <a href="{{ url_for('hospitals.hospital_admin') }}">Administrator review</a></footer>
+</main></body>
+</html>

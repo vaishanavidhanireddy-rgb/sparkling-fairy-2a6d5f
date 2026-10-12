@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard | Quantum Healthcare</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main class="shell">
+  <header>
+    <a class="brand" href="{{ url_for('reports.dashboard') }}">QH</a>
+    <span>Quantum Healthcare</span><span class="spacer"></span>
+    <span class="muted">{{ session.email }}</span>
+    <form method="post" action="{{ url_for('auth.logout') }}"><button class="text-button">Sign out</button></form>
+  </header>
+  {% for category, message in get_flashed_messages(with_categories=true) %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}
+  <section class="page-heading"><p class="eyebrow">YOUR WORKSPACE</p><h1>Reports</h1><p class="muted">Your saved report text is private unless you create a QR share link.</p></section>
+
+  <section class="card consent">
+    <div><h2>Experimental analysis consent</h2><p>{{ purpose }}.</p><small>Comparisons use simple text overlap and are not clinical advice.</small></div>
+    <form method="post" action="{{ url_for('reports.consent') }}"><button name="granted" value="yes">Allow</button><button class="secondary" name="granted" value="no">Withdraw</button></form>
+    <p class="status">Analysis consent: <strong>{{ 'Allowed' if consent else 'Not allowed' }}</strong></p>
+  </section>
+
+  <section class="card share-card">
+    <h2>Patient contact and location</h2>
+    <p class="muted">Your state and area are used to match you with approved hospital listings. Phone numbers use international format, for example +919876543210.</p>
+    <form method="post" action="{{ url_for('reports.update_contact') }}">
+      <label>Patient phone number<input type="tel" name="phone" value="{{ phone }}" placeholder="+919876543210" pattern="\+[1-9][0-9]{7,14}" autocomplete="tel"></label>
+      <label>Country<input name="country" value="{{ patient_country }}" required></label>
+      <label>State<input name="state" value="{{ patient_state }}" maxlength="100" autocomplete="address-level1"></label>
+      <label>Area / city<input name="area" value="{{ patient_area }}" maxlength="100" autocomplete="address-level2"></label>
+      <label class="checkbox-label"><input type="checkbox" name="sms_consent" value="yes" {% if sms_consent %}checked{% endif %}><span>{{ sms_purpose }}.</span></label>
+      <button>Save contact settings</button>
+    </form>
+  </section>
+
+  <section class="card share-card">
+    <h2>Hospitals in your area</h2>
+    {% if patient_area and patient_state %}<p class="muted">See hospitals registered in {{ patient_area }}, {{ patient_state }}. Listings appear after review.</p>
+    {% else %}<p class="muted">Add your state and area above to match approved hospital listings.</p>{% endif %}
+    <a class="button-link" href="{{ url_for('hospitals.directory') }}">View hospital directory</a>
+    <p class="muted">Hospitals can <a href="{{ url_for('hospitals.register_hospital') }}">register their listing here</a>.</p>
+  </section>
+
+  <section class="columns">
+    <form class="card" method="post" action="{{ url_for('reports.add_report') }}">
+      <h2>Add report text</h2>
+      <label>Report title<input name="title" maxlength="100" required placeholder="e.g. Blood test - October"></label>
+      <label>Text<textarea name="content" maxlength="20000" rows="8" required placeholder="Paste report text here"></textarea></label>
+      <button>Save report</button>
+    </form>
+    <div class="card">
+      <div class="row"><h2>Saved reports</h2><a class="button-link" href="{{ url_for('quantum.analysis') }}">Compare reports</a></div>
+      {% if reports %}<label for="report-search">Search saved reports</label><input id="report-search" type="search" placeholder="Search by title or explanation" autocomplete="off"><p id="report-search-status" class="muted" role="status" aria-live="polite"></p>{% endif %}
+      {% if reports %}<ul class="report-list">{% for report in reports %}<li class="report-entry"><div><strong>{{ report.title }}</strong><small>{{ report.created_at }}</small>{% if report.explanation %}<details class="report-explanation"><summary>Read AI explanation · English and తెలుగు</summary><pre>{{ report.explanation }}</pre></details>{% endif %}</div></li>{% endfor %}</ul>
+      {% else %}<p class="muted">No reports yet. Add report text to get started.</p>{% endif %}
+    </div>
+  </section>
+
+  <section class="card share-card">
+    <h2>Ask about a symptom</h2>
+    <p class="muted">No photo needed. Describe what you are feeling and get a friendly explanation in English and Telugu. Avoid entering your name or other personal details. Your question is sent to Groq AI and is not saved in your reports.</p>
+    <form method="post" action="{{ url_for('reports.dashboard') }}">
+      <label for="symptom-question">What are you feeling or wondering about?</label>
+      <textarea id="symptom-question" name="symptom" maxlength="600" rows="3" required placeholder="For example: I have had a headache since this morning">{{ symptom_question }}</textarea>
+      <button>Explain in English and Telugu</button>
+    </form>
+    {% if symptom_error %}<div class="notice error" role="alert">{{ symptom_error }}</div>{% endif %}
+    {% if symptom_result %}<section class="notice symptom-answer" aria-live="polite"><h3>Your explanation</h3><pre>{{ symptom_result }}</pre></section>{% endif %}
+  </section>
+
+  <section class="card share-card">
+    <h2>Explain a photo or PDF</h2>
+    <p class="muted">Upload a medical report photo or PDF to get a plain-language explanation in English and తెలుగు. The file is sent to Google's Gemini AI for processing; the uploaded file itself is not stored by this app. AI explanations can be wrong and are not a diagnosis.</p>
+    <form method="post" action="{{ url_for('reports.upload_report') }}" enctype="multipart/form-data">
+      <label>Choose report photo or PDF<input type="file" name="file" accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" required></label>
+      <small>JPG, PNG, WEBP, or PDF · maximum 2 MB</small>
+      <button>Explain in English and Telugu</button>
+    </form>
+  </section>
+
+  <section class="card share-card">
+    <h2>Share one report with a QR code</h2>
+    <p class="muted">A person who scans the QR code can view the selected report text. The link works without signing in. You can revoke it below.</p>
+    {% if reports %}
+    <form method="post" action="{{ url_for('reports.create_share') }}">
+      <label>Select report<select name="report_id" required>{% for report in reports %}<option value="{{ report.id }}">{{ report.title }}</option>{% endfor %}</select></label>
+      <label class="checkbox-label"><input type="checkbox" name="share_consent" value="yes" required><span>I consent to display this report to anyone with its QR code or link.</span></label>
+      <button>Create QR code and confirm</button>
+    </form>
+    {% else %}<p class="muted">Save a report before creating a QR code.</p>{% endif %}
+  </section>
+
+  {% if shares %}<section class="card share-card"><h2>Active QR shares</h2>
+    {% for share in shares %}<article class="share-item"><div><strong>{{ share.title }}</strong><p><a href="{{ share.url }}">{{ share.url }}</a></p><small>Anyone with this link can view the report.</small>
+      <form method="post" action="{{ url_for('reports.revoke_share', token=share.token) }}" onsubmit="return confirm('Revoke this QR link? It will stop working immediately.');"><button class="secondary">Revoke link</button></form>
+    </div><img class="qr-code" src="{{ share.qr_data }}" alt="QR code linking to {{ share.title }}"></article>{% endfor %}
+  </section>{% endif %}
+  <footer>Educational prototype. Shared reports may contain sensitive information; share carefully.</footer>
+</main>
+</body>
+</html>

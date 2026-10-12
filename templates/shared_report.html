@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Shared report | Quantum Healthcare</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body><main class="shell">
+  <header><span class="brand">QH</span><span>Shared report</span></header>
+  <section class="page-heading"><p class="eyebrow">REPORT SHARED BY ITS OWNER</p><h1>{{ report.title }}</h1><p class="muted">Report date: {{ report.created_at }}</p></section>
+  <section class="card shared-content"><h2>Report details</h2><pre>{{ report.content }}</pre></section>
+  <footer>This link grants access to report text. Contact the owner if you received it by mistake.</footer>
+</main></body>
+</html>

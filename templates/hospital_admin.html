@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hospital listing review | Quantum Healthcare</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body><main class="shell">
+  <header><a class="brand" href="{{ url_for('index') }}">QH</a><span>Hospital listing review</span></header>
+  {% for category, message in get_flashed_messages(with_categories=true) %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}
+  {% if not is_admin %}<section class="page-heading"><h1>Administrator access</h1></section>
+  <form class="card" method="post"><label>Review key<input type="password" name="admin_key" required autocomplete="current-password"></label><button>Continue</button></form>
+  {% else %}<section class="page-heading"><h1>Pending hospital listings</h1></section>
+  {% if submissions %}{% for hospital in submissions %}<article class="card hospital-review"><h2>{{ hospital.name }}</h2><p>{{ hospital.address }}, {{ hospital.area }}, {{ hospital.state }}, {{ hospital.country }}</p><p>{{ hospital.phone }} · {{ hospital.email }}</p>{% if hospital.website %}<p>{{ hospital.website }}</p>{% endif %}
+    <form method="post" action="{{ url_for('hospitals.review_hospital', hospital_id=hospital.id, action='approve') }}"><input type="hidden" name="admin_key" value="{{ admin_key }}"><button>Approve listing</button></form>
+    <form method="post" action="{{ url_for('hospitals.review_hospital', hospital_id=hospital.id, action='reject') }}"><input type="hidden" name="admin_key" value="{{ admin_key }}"><button class="secondary">Reject listing</button></form>
+  </article>{% endfor %}{% else %}<div class="notice">No listings are waiting for review.</div>{% endif %}{% endif %}
+  <footer>Review contact and location information before approving a hospital.</footer>
+</main></body>
+</html>
