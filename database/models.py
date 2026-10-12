@@ -4,68 +4,193 @@ from contextlib import contextmanager
 
 
 def init_db(path):
-    with sqlite3.connect(path) as db:
-        db.execute("PRAGMA foreign_keys = ON")
-        db.executescript("""
-            CREATE TABLE IF NOT EXISTS users (
+    db = sqlite3.connect(path)
+    try:
+        with db:
+            db.execute("PRAGMA foreign_keys = ON")
+            db.executescript("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT NOT NULL UNIQUE,
+                    password_hash TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE TABLE IF NOT EXISTS reports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    title TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    explanation TEXT NOT NULL DEFAULT '',
+                    file_data BLOB,
+                    mime_type TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE TABLE IF NOT EXISTS medications (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    name TEXT NOT NULL,
+                    instructions TEXT NOT NULL DEFAULT '',
+                    reminder_time TEXT NOT NULL,
+                    active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0, 1)),
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE TABLE IF NOT EXISTS wellness_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    log_date TEXT NOT NULL,
+                    water_glasses INTEGER NOT NULL DEFAULT 0,
+                    sleep_hours REAL NOT NULL DEFAULT 0,
+                    exercise_minutes INTEGER NOT NULL DEFAULT 0,
+                    steps INTEGER NOT NULL DEFAULT 0,
+                    focus TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, log_date)
+                );
+                CREATE TABLE IF NOT EXISTS appointment_hospitals (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    hospital_name TEXT COLLATE NOCASE NOT NULL,
+                    state TEXT COLLATE NOCASE NOT NULL,
+                    district TEXT COLLATE NOCASE NOT NULL,
+                    city TEXT COLLATE NOCASE NOT NULL,
+                    area TEXT COLLATE NOCASE NOT NULL,
+                    address TEXT NOT NULL DEFAULT '',
+                    phone TEXT NOT NULL DEFAULT '',
+                    category TEXT NOT NULL DEFAULT '',
+                    care_type TEXT NOT NULL DEFAULT '',
+                    specialties TEXT NOT NULL DEFAULT '',
+                    pincode TEXT NOT NULL DEFAULT '',
+                    coordinates TEXT NOT NULL DEFAULT '',
+                    source_type TEXT NOT NULL DEFAULT 'admin_uploaded',
+                    source_record_id TEXT NOT NULL DEFAULT '',
+                    source_url TEXT NOT NULL DEFAULT '',
+                    imported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(hospital_name, state, district, city, area)
+                );
+                CREATE INDEX IF NOT EXISTS appointment_hospitals_location
+                    ON appointment_hospitals(state, district, city, area);
+                CREATE TABLE IF NOT EXISTS appointment_locations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    state TEXT COLLATE NOCASE NOT NULL,
+                    district TEXT COLLATE NOCASE NOT NULL,
+                    city TEXT COLLATE NOCASE NOT NULL,
+                    source_code TEXT NOT NULL DEFAULT '',
+                    pincodes TEXT NOT NULL DEFAULT '',
+                    source_url TEXT NOT NULL,
+                    active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0, 1)),
+                    imported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(state, district, city)
+                );
+                CREATE INDEX IF NOT EXISTS appointment_locations_parent
+                    ON appointment_locations(state, district, city);
+            CREATE TABLE IF NOT EXISTS appointment_states (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT NOT NULL UNIQUE,
-                password_hash TEXT NOT NULL,
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                state TEXT COLLATE NOCASE NOT NULL UNIQUE,
+                source_code TEXT NOT NULL DEFAULT '',
+                source_url TEXT NOT NULL,
+                active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0, 1)),
+                imported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
-            CREATE TABLE IF NOT EXISTS consents (
+            CREATE TABLE IF NOT EXISTS appointment_districts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                purpose TEXT NOT NULL,
-                granted INTEGER NOT NULL CHECK(granted IN (0, 1)),
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                state TEXT COLLATE NOCASE NOT NULL,
+                district TEXT COLLATE NOCASE NOT NULL,
+                source_code TEXT NOT NULL DEFAULT '',
+                source_url TEXT NOT NULL,
+                active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0, 1)),
+                imported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(state, district)
             );
-            CREATE TABLE IF NOT EXISTS reports (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                title TEXT NOT NULL,
-                content TEXT NOT NULL,
-                explanation TEXT NOT NULL DEFAULT '',
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            );
-            CREATE TABLE IF NOT EXISTS report_shares (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                token TEXT NOT NULL UNIQUE,
-                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                report_id INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                revoked INTEGER NOT NULL DEFAULT 0 CHECK(revoked IN (0, 1))
-            );
-            CREATE TABLE IF NOT EXISTS hospitals (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL,
-                phone TEXT NOT NULL,
-                state TEXT NOT NULL,
-                area TEXT NOT NULL,
-                country TEXT NOT NULL DEFAULT 'India',
-                address TEXT NOT NULL,
-                website TEXT,
-                status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-        # Additive migration for databases created before contact numbers existed.
-        columns = {row[1] for row in db.execute("PRAGMA table_info(users)")}
-        if "phone" not in columns:
-            db.execute("ALTER TABLE users ADD COLUMN phone TEXT")
-        if "firebase_uid" not in columns:
-            db.execute("ALTER TABLE users ADD COLUMN firebase_uid TEXT")
-        if "state" not in columns:
-            db.execute("ALTER TABLE users ADD COLUMN state TEXT")
-        if "area" not in columns:
-            db.execute("ALTER TABLE users ADD COLUMN area TEXT")
-        if "country" not in columns:
-            db.execute("ALTER TABLE users ADD COLUMN country TEXT NOT NULL DEFAULT 'India'")
-        report_columns = {row[1] for row in db.execute("PRAGMA table_info(reports)")}
-        if "explanation" not in report_columns:
-            db.execute("ALTER TABLE reports ADD COLUMN explanation TEXT NOT NULL DEFAULT ''")
-        db.execute("CREATE UNIQUE INDEX IF NOT EXISTS users_firebase_uid ON users(firebase_uid)")
+            CREATE INDEX IF NOT EXISTS appointment_districts_parent
+                ON appointment_districts(state, district);
+                CREATE TABLE IF NOT EXISTS appointment_doctors (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    hospital_id INTEGER NOT NULL REFERENCES appointment_hospitals(id) ON DELETE CASCADE,
+                    doctor_name TEXT COLLATE NOCASE NOT NULL,
+                    specialty TEXT NOT NULL DEFAULT '',
+                    registration_number TEXT NOT NULL DEFAULT '',
+                    verification_url TEXT NOT NULL DEFAULT '',
+                    verification_status TEXT NOT NULL DEFAULT 'unverified',
+                    source_type TEXT NOT NULL DEFAULT 'admin_uploaded',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(hospital_id, doctor_name, registration_number)
+                );
+                CREATE INDEX IF NOT EXISTS doctors_by_hospital
+                    ON appointment_doctors(hospital_id, doctor_name);
+                CREATE TABLE IF NOT EXISTS appointment_requests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    hospital_id INTEGER NOT NULL REFERENCES appointment_hospitals(id) ON DELETE CASCADE,
+                    doctor_id INTEGER REFERENCES appointment_doctors(id) ON DELETE SET NULL,
+                    appointment_date TEXT NOT NULL DEFAULT '',
+                    time_slot TEXT NOT NULL DEFAULT 'any',
+                    booking_key TEXT,
+                    booking_mode TEXT NOT NULL DEFAULT 'demo_request',
+                    appointment_at TEXT NOT NULL,
+                    reason TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS appointments_by_user
+                    ON appointment_requests(user_id, appointment_at);
+            """)
+            # Additive migration for databases created before contact numbers existed.
+            columns = {row[1] for row in db.execute("PRAGMA table_info(users)")}
+            if "phone" not in columns:
+                db.execute("ALTER TABLE users ADD COLUMN phone TEXT")
+            if "firebase_uid" not in columns:
+                db.execute("ALTER TABLE users ADD COLUMN firebase_uid TEXT")
+            if "state" not in columns:
+                db.execute("ALTER TABLE users ADD COLUMN state TEXT")
+            if "area" not in columns:
+                db.execute("ALTER TABLE users ADD COLUMN area TEXT")
+            if "country" not in columns:
+                db.execute("ALTER TABLE users ADD COLUMN country TEXT NOT NULL DEFAULT 'India'")
+            report_columns = {row[1] for row in db.execute("PRAGMA table_info(reports)")}
+            if "explanation" not in report_columns:
+                db.execute("ALTER TABLE reports ADD COLUMN explanation TEXT NOT NULL DEFAULT ''")
+            if "file_data" not in report_columns:
+                db.execute("ALTER TABLE reports ADD COLUMN file_data BLOB")
+            if "mime_type" not in report_columns:
+                db.execute("ALTER TABLE reports ADD COLUMN mime_type TEXT NOT NULL DEFAULT ''")
+            wellness_columns = {row[1] for row in db.execute("PRAGMA table_info(wellness_logs)")}
+            if "focus" not in wellness_columns:
+                db.execute("ALTER TABLE wellness_logs ADD COLUMN focus TEXT NOT NULL DEFAULT ''")
+            hospital_columns = {row[1] for row in db.execute("PRAGMA table_info(appointment_hospitals)")}
+            hospital_additions = {
+                "category": "TEXT NOT NULL DEFAULT ''",
+                "care_type": "TEXT NOT NULL DEFAULT ''",
+                "specialties": "TEXT NOT NULL DEFAULT ''",
+                "pincode": "TEXT NOT NULL DEFAULT ''",
+                "coordinates": "TEXT NOT NULL DEFAULT ''",
+                "source_type": "TEXT NOT NULL DEFAULT 'admin_uploaded'",
+                "source_record_id": "TEXT NOT NULL DEFAULT ''",
+                "source_url": "TEXT NOT NULL DEFAULT ''",
+                "imported_at": "TEXT NOT NULL DEFAULT ''",
+            }
+            for column, definition in hospital_additions.items():
+                if column not in hospital_columns:
+                    db.execute(f"ALTER TABLE appointment_hospitals ADD COLUMN {column} {definition}")
+            location_columns = {row[1] for row in db.execute("PRAGMA table_info(appointment_locations)")}
+            if "pincodes" not in location_columns:
+                db.execute("ALTER TABLE appointment_locations ADD COLUMN pincodes TEXT NOT NULL DEFAULT ''")
+            request_columns = {row[1] for row in db.execute("PRAGMA table_info(appointment_requests)")}
+            request_additions = {
+                "doctor_id": "INTEGER REFERENCES appointment_doctors(id) ON DELETE SET NULL",
+                "appointment_date": "TEXT NOT NULL DEFAULT ''",
+                "time_slot": "TEXT NOT NULL DEFAULT 'any'",
+                "booking_key": "TEXT",
+                "booking_mode": "TEXT NOT NULL DEFAULT 'demo_request'",
+            }
+            for column, definition in request_additions.items():
+                if column not in request_columns:
+                    db.execute(f"ALTER TABLE appointment_requests ADD COLUMN {column} {definition}")
+            # Keep pre-migration requests distinguishable from new, unconfirmed demo requests.
+            db.execute("UPDATE appointment_requests SET booking_mode='legacy_request' WHERE booking_key IS NULL AND appointment_date='' AND booking_mode='demo_request'")
+            db.execute("CREATE UNIQUE INDEX IF NOT EXISTS appointment_request_dedupe ON appointment_requests(booking_key) WHERE booking_key IS NOT NULL")
+            db.execute("CREATE UNIQUE INDEX IF NOT EXISTS users_firebase_uid ON users(firebase_uid)")
+    finally:
+        db.close()
 
 
 @contextmanager

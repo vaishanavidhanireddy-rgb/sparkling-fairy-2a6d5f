@@ -1,21 +1,15 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Complete patient profile | Quantum Healthcare</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Healthcare | Complete your profile</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
-<body><main class="shell">
-  <header><span class="brand">QH</span><span>Complete patient profile</span><span class="spacer"></span><span>{{ session.email }}</span></header>
-  {% for category, message in get_flashed_messages(with_categories=true) %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}
-  <section class="page-heading"><p class="eyebrow">ACCOUNT SETUP</p><h1>Patient contact and area</h1><p class="muted">Add your phone, state, and area so the app can show registered hospitals for your location.</p></section>
-  <form class="card hospital-form" method="post">
-    <label>Patient phone number <small>(include country code)</small><input type="tel" name="phone" required placeholder="+919876543210" pattern="\+[1-9][0-9]{7,14}" autocomplete="tel" value="{{ account.phone or '' }}"></label>
-    <label>Country<input name="country" required value="{{ account.country or 'India' }}" autocomplete="country-name"></label>
-    <label>State<input name="state" required maxlength="100" value="{{ account.state or '' }}" autocomplete="address-level1"></label>
-    <label>Area / city<input name="area" required maxlength="100" value="{{ account.area or '' }}" autocomplete="address-level2"></label>
-    <button>Save and continue</button>
-  </form>
-  <footer>Your phone number is private and is not shown in hospital search results.</footer>
-</main></body>
+<body>
+  <div id="root"></div>
+  <script>window.CARECONNECT = {{ react_props|tojson }};</script>
+  <script src="{{ url_for('static', filename='react-app.js') }}" defer></script>
+</body>
 </html>

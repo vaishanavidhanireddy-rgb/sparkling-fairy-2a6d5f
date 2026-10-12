@@ -1,0 +1,14 @@
+{
+  "name": "health-copilot-react-ui",
+  "private": true,
+  "scripts": {
+    "build": "esbuild ./frontend/src/main.jsx --bundle --minify --outfile=./static/react-app.js --loader:.css=empty"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.5"
+  }
+}

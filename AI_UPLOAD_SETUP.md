@@ -1,35 +1,27 @@
-# Bilingual report upload setup
+# AI and report extraction setup
 
-The dashboard accepts JPG, PNG, WEBP, and PDF files up to 2 MB. The app sends the uploaded file to Google's Gemini API and saves the returned English and Telugu explanation with the report. The original upload is processed in memory and is not saved by this app.
-
-## Where to put API keys
-
-Open the `.env` file in the project folder and paste each key after `=` with no extra spaces, for example:
+Add provider keys to the ignored `.env` file in the project root, then restart Flask:
 
 ```text
-GROQ_API_KEY=your-actual-groq-key
-GEMINI_API_KEY=your-actual-gemini-key
+MISTRAL_API_KEY=your-mistral-api-key
+MISTRAL_MODEL=ministral-14b-latest
+SECRET_KEY=your-long-random-secret
 ```
 
-Save the file and restart the Flask app. `.env` is excluded from Git so your keys are not added to source control. Do not paste keys into chat or commit them.
+`MISTRAL_API_KEY` powers report explanations, bilingual health questions, and optional wellness ideas. `MISTRAL_MODEL` defaults to `ministral-14b-latest`; set it to a model ID available to your Mistral API account if needed. Wellness ideas require a checkbox confirmation and send only the day's self-entered wellness values and focus. When a key is missing, the page displays the required setup message. Do not commit `.env` or place API keys in browser code. Image reports are sent as base64 image data; PDFs use locally extracted text, so scanned PDFs need local OCR to be configured.
 
-Set a Gemini API key in the environment before starting the Flask app:
+Report uploads are saved privately first. Open the saved report from its detail page and choose **Explain this report in English and Telugu** when ready. The selected report file is retained in the private SQLite database so the AI can read it after saving. Older saved reports without retained file data can be explained from extracted text when available.
 
-```powershell
-# Set the Google API key in your local .env file; do not commit a real key.
-python app.py
-```
+## Hospital directory and appointment requests
 
-Create a key in [Google AI Studio](https://aistudio.google.com/app/apikey). Without this setting, photo and PDF explanations are unavailable; pasted report text and other dashboard features continue to work.
+Set `HOSPITAL_ADMIN_EMAILS` in `.env` to the email address(es) allowed to upload directory records. Separate multiple addresses with commas, then restart Flask. The matching signed-in account sees the admin-only import tools on Doctor Appointments. Download a hospital CSV from the [Government of India Open Data hospital directory](https://www.data.gov.in/resource/national-hospital-directory-geo-code-and-additional-parameters-updated-till-last-month) and upload it directly. Imports retain a source label and import timestamp. The selectors are populated only from imported records; this is not a live directory and you should confirm contact and location details before travel. Admin-verified entries may also be uploaded with the supplied hospital template (`hospital_name,state,district,city,area`; `address,phone` optional).
 
-For the symptom question feature, set your Groq API key as well:
+The government hospital file does not supply individual doctor names. Optional doctor records use the supplied doctor CSV template (`hospital_name,state,district,city,doctor_name`; `specialty,registration_number` optional), must match an imported hospital, and are always labeled unverified. Check the [NMC public doctor register](https://nmr.nmc.org.in/search-doctor). The app does not call an NMC API.
 
-```powershell
-# Set the Groq API key in your local .env file; do not commit a real key.
-python app.py
-```
+Date and time selections create a private demo request only. No appointment is transmitted and no live availability is checked. Identical user/hospital/doctor/date/time preference requests are prevented by a database uniqueness key.
 
-Create a key in [Groq Console](https://console.groq.com/keys). Symptom questions are sent to Groq to generate a response and are not saved by this app.
+Appointment requests are saved privately under the signed-in user's account. This starter app does not transmit requests or notify hospitals, so users must call the listed number to confirm availability. Do not upload hospital data unless you have permission to publish it.
 
-AI explanations can misread medical documents. They are for understanding only and do not replace advice from a qualified clinician.
+PDFs use pypdf for embedded text extraction. Scanned PDFs and JPG/PNG images are also sent to the configured AI vision provider. Local image OCR uses Tesseract if installed; install its Windows executable and make sure it is on PATH.
 
+AI can misread reports. It should only describe visible values and ranges, must not diagnose or prescribe, and cannot replace a qualified clinician.

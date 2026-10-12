@@ -1,18 +1,19 @@
-"""Quantum Healthcare demo application.
+"""Healthcare patient dashboard Flask application.
 
 This application is an educational prototype. It is not a medical device and
 does not provide diagnosis or treatment recommendations.
 """
 import os
+import secrets
 from pathlib import Path
 
 from flask import Flask, redirect, render_template, session, url_for
 
 from database.models import init_db
 from routes.auth import auth_bp
-from routes.quantum import quantum_bp
 from routes.reports import reports_bp
-from routes.hospitals import hospitals_bp
+from routes.appointments import appointments_bp
+from routes.react_view import render_react_page
 
 
 def load_local_env():
@@ -37,29 +38,27 @@ def create_app():
     load_local_env()
     app = Flask(__name__)
     app.config.update(
-        SECRET_KEY=os.environ.get("SECRET_KEY", "dev-only-change-me"),
+        SECRET_KEY=os.environ.get("SECRET_KEY") or secrets.token_hex(32),
         HOST=os.environ.get("HOST", "127.0.0.1"),
-        TWILIO_ACCOUNT_SID=os.environ.get("TWILIO_ACCOUNT_SID", ""),
-        TWILIO_AUTH_TOKEN=os.environ.get("TWILIO_AUTH_TOKEN", ""),
-        TWILIO_PHONE_NUMBER=os.environ.get("TWILIO_PHONE_NUMBER", ""),
         FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY", ""),
-        GEMINI_API_KEY=os.environ.get("GEMINI_API_KEY", ""),
-        GROQ_API_KEY=os.environ.get("GROQ_API_KEY", ""),
+        MISTRAL_API_KEY=os.environ.get("MISTRAL_API_KEY", ""),
+        MISTRAL_MODEL=os.environ.get("MISTRAL_MODEL", "ministral-14b-latest"),
+        HOSPITAL_ADMIN_EMAILS={email.strip().casefold() for email in os.environ.get("HOSPITAL_ADMIN_EMAILS", "").split(",") if email.strip()},
         FIREBASE_AUTH_DOMAIN=os.environ.get("FIREBASE_AUTH_DOMAIN", ""),
         FIREBASE_PROJECT_ID=os.environ.get("FIREBASE_PROJECT_ID", ""),
         FIREBASE_APP_ID=os.environ.get("FIREBASE_APP_ID", ""),
         FIREBASE_MESSAGING_SENDER_ID=os.environ.get("FIREBASE_MESSAGING_SENDER_ID", ""),
         FIREBASE_STORAGE_BUCKET=os.environ.get("FIREBASE_STORAGE_BUCKET", ""),
         FIREBASE_SERVICE_ACCOUNT_FILE=os.environ.get("FIREBASE_SERVICE_ACCOUNT_FILE", ""),
-        HOSPITAL_ADMIN_KEY=os.environ.get("HOSPITAL_ADMIN_KEY", ""),
         DATABASE_PATH=str(Path(__file__).parent / "quantum_healthcare.sqlite3"),
         MAX_CONTENT_LENGTH=2 * 1024 * 1024,
     )
+    app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
+                     SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "0") == "1")
     init_db(app.config["DATABASE_PATH"])
     app.register_blueprint(auth_bp)
     app.register_blueprint(reports_bp)
-    app.register_blueprint(quantum_bp)
-    app.register_blueprint(hospitals_bp)
+    app.register_blueprint(appointments_bp)
 
     @app.get("/")
     def index():
@@ -76,7 +75,7 @@ def create_app():
                 "messagingSenderId": app.config["FIREBASE_MESSAGING_SENDER_ID"],
                 "storageBucket": app.config["FIREBASE_STORAGE_BUCKET"],
             }
-        return render_template("index.html", firebase_config=firebase_config)
+        return render_react_page("landing", firebase=firebase_config)
 
     return app
 
