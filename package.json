@@ -2,7 +2,8 @@
   "name": "health-copilot-react-ui",
   "private": true,
   "scripts": {
-    "build": "esbuild ./frontend/src/main.jsx --bundle --minify --outfile=./static/react-app.js --loader:.css=empty"
+    "build": "esbuild ./frontend/src/main.jsx --bundle --minify --outfile=./static/react-app.js --loader:.css=empty",
+    "verel": "vercel build"
   },
   "dependencies": {
     "react": "^19.1.0",

@@ -1,9 +1,7 @@
 import hashlib
 import secrets
 import re
-import smtplib
 from datetime import datetime, timedelta, timezone
-from email.message import EmailMessage
 
 from flask import Blueprint, current_app, flash, jsonify, redirect, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -13,39 +11,6 @@ from routes.react_view import render_react_page
 
 auth_bp = Blueprint("auth", __name__)
 RESET_MESSAGE = "If that email belongs to a password-enabled account and email delivery is configured, a password reset link will be sent shortly."
-
-
-def _send_password_reset(email, token):
-    config = current_app.config
-    required = ("MAIL_SERVER", "MAIL_DEFAULT_SENDER")
-    if not all(config.get(key) for key in required):
-        current_app.logger.error("Password reset email is not configured; set MAIL_SERVER and MAIL_DEFAULT_SENDER.")
-        return False
-    base_url = config.get("PUBLIC_BASE_URL", "").rstrip("/")
-    if not base_url:
-        current_app.logger.error("Password reset email is not configured; set PUBLIC_BASE_URL.")
-        return False
-    reset_url = f"{base_url}{url_for('auth.reset_password', token=token)}"
-    message = EmailMessage()
-    message["Subject"] = "Reset your Healthcare password"
-    message["From"] = config["MAIL_DEFAULT_SENDER"]
-    message["To"] = email
-    message.set_content(
-        "We received a request to reset the password for your Healthcare account.\n\n"
-        f"Use this link within 60 minutes to choose a new password:\n{reset_url}\n\n"
-        "If you did not request this, you can ignore this email."
-    )
-    try:
-        with smtplib.SMTP(config["MAIL_SERVER"], config.get("MAIL_PORT", 587), timeout=10) as server:
-            if config.get("MAIL_USE_TLS", True):
-                server.starttls()
-            if config.get("MAIL_USERNAME"):
-                server.login(config["MAIL_USERNAME"], config.get("MAIL_PASSWORD", ""))
-            server.send_message(message)
-        return True
-    except (OSError, smtplib.SMTPException):
-        current_app.logger.exception("Could not send a Healthcare password reset email.")
-        return False
 
 
 def _reset_token_record(token, db):
@@ -82,8 +47,8 @@ def forgot_password():
                         )
                     else:
                         token = ""
-            if user and token:
-                _send_password_reset(email, token)
+            # Supabase auth - no email sent, token generated locally if needed
+            flash("Password reset token generated. Share the token with the user via secure channel.", "info")
         flash(RESET_MESSAGE, "success")
         return redirect(url_for("auth.forgot_password"))
     return render_react_page("forgot_password")
@@ -115,6 +80,7 @@ def reset_password(token):
                         db.execute("DELETE FROM password_reset_tokens WHERE user_id=? AND id<>?",
                                    (record["user_id"], record["id"]))
                         session.clear()
+                        session["user_id"] = record["user_id"]
                         flash("Your password has been reset. You can now sign in.", "success")
                         return redirect(url_for("index"))
             flash("This password reset link is invalid or has expired. Request a new link.", "error")
@@ -147,6 +113,9 @@ def register():
             session.clear()
             session["user_id"] = cursor.lastrowid
             session["email"] = email
+            # Mark email as verified since we're disabling mail verification
+            db.execute("UPDATE users SET verified_at=? WHERE id=?", 
+                      (datetime.now(timezone.utc).isoformat(), cursor.lastrowid))
     except Exception:
         flash("That account could not be created. The email may already be registered.", "error")
         return redirect(url_for("index"))

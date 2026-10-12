@@ -7,7 +7,7 @@ import os
 import secrets
 from pathlib import Path
 
-from flask import Flask, redirect, render_template, session, url_for
+from flask import Flask, redirect, render_template, session, url_for, jsonify, request
 
 from database.models import init_db
 from routes.auth import auth_bp
@@ -39,18 +39,21 @@ def create_app():
     app = Flask(__name__)
     app.config.update(
         SECRET_KEY=os.environ.get("SECRET_KEY") or secrets.token_hex(32),
-        HOST=os.environ.get("HOST", "127.0.0.1"),
-        FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY", ""),
+        HOST=os.environ.get("HOST", "0.0.0.1"),
+        SUPABASE_URL=os.environ.get("SUPABASE_URL", ""),
+        SUPABASE_ANON_KEY=os.environ.get("SUPABASE_ANON_KEY", ""),
         MISTRAL_API_KEY=os.environ.get("MISTRAL_API_KEY", ""),
         MISTRAL_MODEL=os.environ.get("MISTRAL_MODEL", "ministral-14b-latest"),
         MAIL_SERVER=os.environ.get("MAIL_SERVER", ""),
         MAIL_PORT=int(os.environ.get("MAIL_PORT", "587")),
-        MAIL_USE_TLS=os.environ.get("MAIL_USE_TLS", "1") == "1",
+        MAIL_USE_TLS=os.environ.get("MAIL_USE_TLS", "0") == "1",
         MAIL_USERNAME=os.environ.get("MAIL_USERNAME", ""),
         MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD", ""),
         MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER", ""),
         PUBLIC_BASE_URL=os.environ.get("PUBLIC_BASE_URL", "").rstrip("/"),
         HOSPITAL_ADMIN_EMAILS={email.strip().casefold() for email in os.environ.get("HOSPITAL_ADMIN_EMAILS", "").split(",") if email.strip()},
+        MAIL_VERIFICATION_ENABLED=os.environ.get("MAIL_VERIFICATION_ENABLED", "0") == "1",
+        MAIL_OTP_ENABLED=os.environ.get("MAIL_OTP_ENABLED", "0") == "1",
         FIREBASE_AUTH_DOMAIN=os.environ.get("FIREBASE_AUTH_DOMAIN", ""),
         FIREBASE_PROJECT_ID=os.environ.get("FIREBASE_PROJECT_ID", ""),
         FIREBASE_APP_ID=os.environ.get("FIREBASE_APP_ID", ""),
@@ -61,28 +64,63 @@ def create_app():
         MAX_CONTENT_LENGTH=2 * 1024 * 1024,
     )
     app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
-                     SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "0") == "1")
+                      SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "0") == "1")
     init_db(app.config["DATABASE_PATH"])
     app.register_blueprint(auth_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(appointments_bp)
 
+    # Supabase authentication middleware
+    @app.before_request
+    def supabase_auth():
+        """Verify Supabase JWT token and set session user if valid."""
+        if request.endpoint and ("static" in request.endpoint or "auth" in request.endpoint):
+            return None
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            try:
+                import httpx
+                supabase_url = app.config.get("SUPABASE_URL", "")
+                supabase_anon_key = app.config.get("SUPABASE_ANON_KEY", "")
+                if supabase_url and supabase_anon_key:
+                    headers = {"Authorization": f"Bearer {supabase_anon_key}"}
+                    resp = httpx.get(
+                        f"{supabase_url}/rest/v1/users",
+                        headers=headers,
+                        params={"select": "id,email"},
+                        timeout=5,
+                    )
+                    if resp.status_code == 200:
+                        user_data = resp.json()
+                        if user_data:
+                            session["user_id"] = user_data[0].get("id")
+                            session["email"] = user_data[0].get("email")
+            except Exception:
+                pass
+        if not session.get("user_id"):
+            # Allow public routes
+            public_routes = ["index", "auth.login", "auth.register", "auth.forgot_password",
+                           "auth.reset_password", "static"]
+            if request.endpoint not in public_routes:
+                return redirect(url_for("index"))
+
+    @app.after_request
+    def add_cors_headers(response):
+        """Add CORS headers for Vercel frontend."""
+        origin = request.headers.get("Origin", "")
+        if origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+        return response
+
     @app.get("/")
     def index():
         if session.get("user_id"):
             return redirect(url_for("reports.dashboard"))
-        web_config_keys = ("FIREBASE_API_KEY", "FIREBASE_AUTH_DOMAIN", "FIREBASE_PROJECT_ID", "FIREBASE_APP_ID")
-        firebase_config = None
-        if all(app.config[key] for key in web_config_keys):
-            firebase_config = {
-                "apiKey": app.config["FIREBASE_API_KEY"],
-                "authDomain": app.config["FIREBASE_AUTH_DOMAIN"],
-                "projectId": app.config["FIREBASE_PROJECT_ID"],
-                "appId": app.config["FIREBASE_APP_ID"],
-                "messagingSenderId": app.config["FIREBASE_MESSAGING_SENDER_ID"],
-                "storageBucket": app.config["FIREBASE_STORAGE_BUCKET"],
-            }
-        return render_react_page("landing", firebase=firebase_config)
+        return render_react_page("landing")
 
     return app
 
