@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Healthcare</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+  <div id="root"></div>
+  <script>window.CARECONNECT = {{ react_props|tojson }};</script>
+  <script src="{{ url_for('static', filename='react-app.js') }}" defer></script>
+</body>
+</html>

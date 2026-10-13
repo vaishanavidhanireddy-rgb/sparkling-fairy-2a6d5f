@@ -1,8 +1,11 @@
 """Flask-to-React page bootstrap helpers."""
+import os
 from collections.abc import Mapping
 from datetime import date, datetime
+from pathlib import Path
 
-from flask import get_flashed_messages, render_template, session, url_for
+from flask import Response, get_flashed_messages, session, url_for
+from jinja2.utils import htmlsafe_json_dumps
 
 
 def _json_value(value):
@@ -49,11 +52,39 @@ def common_urls():
     }
 
 
+DIST_INDEX = Path(__file__).resolve().parents[1] / "dist" / "index.html"
+FONT_LINKS = (
+    '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">'
+)
+# Matches what @vitejs/plugin-react injects when Vite itself serves index.html.
+VITE_DEV_HEAD = (
+    '<script type="module">import RefreshRuntime from "/@react-refresh";'
+    "RefreshRuntime.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};"
+    "window.$RefreshSig$=()=>(type)=>type;window.__vite_plugin_react_preamble_installed__=true;</script>"
+    '<script type="module" src="/@vite/client"></script>'
+)
+
+
+def _page_shell():
+    if os.environ.get("VITE_DEV") == "1" or not DIST_INDEX.is_file():
+        return (
+            '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">'
+            f"<title>Healthcare</title>{FONT_LINKS}{VITE_DEV_HEAD}</head>"
+            '<body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>'
+        )
+    return DIST_INDEX.read_text(encoding="utf-8").replace('src="./assets/', 'src="/assets/').replace('href="./assets/', 'href="/assets/')
+
+
 def render_react_page(view, **context):
     props = _json_value(context)
     props.update(view=view, email=session.get("email", ""), urls=common_urls(),
                  flashes=get_flashed_messages(with_categories=True))
-    return render_template("react.html", react_props=props)
+    bootstrap = f"<script>window.CARECONNECT = {htmlsafe_json_dumps(props)};</script>"
+    html = _page_shell().replace('<div id="root"></div>', f'<div id="root"></div>{bootstrap}', 1)
+    return Response(html, mimetype="text/html")
 
 
 def render_dashboard(**context):

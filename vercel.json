@@ -4,9 +4,13 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "{dist/index.html,data/appointments/**,ai/**,routes/**,database/**,scripts/**,app.py}"
+    }
+  },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://healthcare-backend.onrender.com/api/:path*" },
-    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+    { "source": "/((?!assets/).*)", "destination": "/api/index" }
   ],
   "headers": [
     {

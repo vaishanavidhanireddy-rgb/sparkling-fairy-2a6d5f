@@ -10,3 +10,5 @@ data/appointments/*.csv
 data/appointments/*.zip
 
 node_modules/
+
+*.sqlite3

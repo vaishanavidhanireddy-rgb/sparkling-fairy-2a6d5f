@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "sh -c \"(VITE_DEV=1 COOKIE_SECURE=1 COOKIE_SAMESITE=None uv run --no-project --with 'Flask>=3,<4' --with pypdf python app.py &) && vite\"",
+    "dev:frontend": "vite",
     "build": "vite build --config vite.config.js",
     "preview": "vite preview"
   },

@@ -7,9 +7,9 @@ import os
 import secrets
 from pathlib import Path
 
-from flask import Flask, redirect, render_template, session, url_for
+from flask import Flask, redirect, send_from_directory, session, url_for
 
-from database.models import init_db
+from database.models import connection, init_db
 from routes.auth import auth_bp
 from routes.reports import reports_bp
 from routes.appointments import appointments_bp
@@ -34,6 +34,20 @@ def load_local_env():
             os.environ[name] = value
 
 
+LOCATION_DATA = Path(__file__).parent / "data" / "appointments" / "hospital_finder_locations.json"
+
+
+def seed_locations(database_path):
+    """Load the bundled state/district/city list the first time the database is created."""
+    if not LOCATION_DATA.is_file():
+        return
+    with connection(database_path) as db:
+        if db.execute("SELECT 1 FROM appointment_states LIMIT 1").fetchone():
+            return
+    from scripts.import_hospital_finder_locations import import_locations
+    import_locations(database_path, LOCATION_DATA)
+
+
 def create_app():
     load_local_env()
     app = Flask(__name__)
@@ -50,12 +64,23 @@ def create_app():
         FIREBASE_MESSAGING_SENDER_ID=os.environ.get("FIREBASE_MESSAGING_SENDER_ID", ""),
         FIREBASE_STORAGE_BUCKET=os.environ.get("FIREBASE_STORAGE_BUCKET", ""),
         FIREBASE_SERVICE_ACCOUNT_FILE=os.environ.get("FIREBASE_SERVICE_ACCOUNT_FILE", ""),
-        DATABASE_PATH=str(Path(__file__).parent / "quantum_healthcare.sqlite3"),
+        DATABASE_PATH=os.environ.get("DATABASE_PATH") or str(
+            Path("/tmp/quantum_healthcare.sqlite3") if os.environ.get("VERCEL")
+            else Path(__file__).parent / "quantum_healthcare.sqlite3"
+        ),
         MAX_CONTENT_LENGTH=2 * 1024 * 1024,
     )
-    app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
-                     SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "0") == "1")
+    app.config.update(SESSION_COOKIE_HTTPONLY=True,
+                     SESSION_COOKIE_SAMESITE=os.environ.get("COOKIE_SAMESITE", "Lax"),
+                     SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "1" if os.environ.get("VERCEL") else "0") == "1")
     init_db(app.config["DATABASE_PATH"])
+    seed_locations(app.config["DATABASE_PATH"])
+
+    dist_assets = Path(__file__).parent / "dist" / "assets"
+
+    @app.get("/assets/<path:filename>")
+    def built_assets(filename):
+        return send_from_directory(dist_assets, filename, max_age=31536000)
     app.register_blueprint(auth_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(appointments_bp)
