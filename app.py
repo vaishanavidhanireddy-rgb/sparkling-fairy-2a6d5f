@@ -36,7 +36,11 @@ def load_local_env():
 
 def create_app():
     load_local_env()
-    app = Flask(__name__)
+    app = Flask(
+        __name__,
+        static_folder=str(Path(__file__).parent / "dist" / "assets"),
+        static_url_path="/assets",
+    )
     app.config.update(
         SECRET_KEY=os.environ.get("SECRET_KEY") or secrets.token_hex(32),
         HOST=os.environ.get("HOST", "127.0.0.1"),

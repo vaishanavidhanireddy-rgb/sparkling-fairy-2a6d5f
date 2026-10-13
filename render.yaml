@@ -3,7 +3,7 @@ services:
     name: healthcare-backend
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && npm ci && npm run build
     startCommand: gunicorn app:app
     envVars:
       - key: SECRET_KEY
@@ -22,3 +22,5 @@ services:
         value: https://healthcare-backend.onrender.com
       - key: HOST
         value: 0.0.0.0
+      - key: COOKIE_SECURE
+        value: "1"

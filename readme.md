@@ -72,4 +72,6 @@ The Vite frontend entry point is `src/main.jsx`; `npm.cmd run build` creates the
 
 Import the repository as a Vite project and set its Root Directory to the folder containing `package.json`. Use `npm run build` as the Build Command and `dist` as the Output Directory. The static frontend provides the landing page; the Flask service must also be deployed for login and registration.
 
+The Render Blueprint builds the Vite assets as well as installing the Python requirements, because Flask renders the authenticated dashboard using those built assets. Deploy from the repository root so `app.py`, `requirements.txt`, `package.json`, and `render.yaml` are at the service root. It enables secure session cookies for the HTTPS Render service.
+
 The frontend submits login and registration forms to `https://healthcare-backend.onrender.com` by default. If the Flask service uses a different public URL, set `VITE_BACKEND_URL` in the Vercel project's Environment Variables to that service's base URL (without a trailing slash), then redeploy. Do not put environment variables in `vercel.json`.
