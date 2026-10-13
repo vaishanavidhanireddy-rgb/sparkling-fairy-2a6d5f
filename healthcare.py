@@ -64,6 +64,12 @@ def create_app():
     app.register_blueprint(reports_bp)
     app.register_blueprint(appointments_bp)
 
+    @app.get("/account")
+    def account():
+        if session.get("user_id"):
+            return redirect(url_for("reports.welcome"))
+        return render_react_page("account")
+
     @app.get("/")
     def index():
         if session.get("user_id"):
