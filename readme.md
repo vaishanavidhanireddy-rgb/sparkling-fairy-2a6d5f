@@ -66,4 +66,10 @@ Uploads are limited to 2 MB and PDF/JPG/PNG signatures are checked. Report conte
 AI explanations are educational and may be wrong. They do not diagnose conditions or prescribe treatment. Discuss reports with a qualified clinician.
 
 
-The interface is written in React under `frontend/src/`; Flask continues to handle sessions, forms, and database operations. Rebuild `static/react-app.js` after changing React code with `npm.cmd run build`.
+The Vite frontend entry point is `src/main.jsx`; `npm.cmd run build` creates the static site in `dist/`. Flask continues to handle sessions, forms, and database operations.
+
+## Deploy the frontend to Vercel
+
+Import the repository as a Vite project and set its Root Directory to the folder containing `package.json`. Use `npm run build` as the Build Command and `dist` as the Output Directory. The static frontend provides the landing page; the Flask service must also be deployed for login and registration.
+
+The frontend submits login and registration forms to `https://healthcare-backend.onrender.com` by default. If the Flask service uses a different public URL, set `VITE_BACKEND_URL` in the Vercel project's Environment Variables to that service's base URL (without a trailing slash), then redeploy. Do not put environment variables in `vercel.json`.

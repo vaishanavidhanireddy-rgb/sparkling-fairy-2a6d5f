@@ -1,7 +1,16 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
+import './main.css';
 
-const app = window.CARECONNECT || {};
+const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'https://healthcare-backend.onrender.com').replace(/\/+$/, '');
+const app = window.CARECONNECT || {
+  view: 'landing',
+  urls: {
+    login: `${backendUrl}/login`,
+    register: `${backendUrl}/register`,
+  },
+  flashes: [],
+};
 
 function Icon({name, size = 20}) {
   const paths = {
