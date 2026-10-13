@@ -1,15 +1,5 @@
 {
   "framework": "vite",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "routes": {
-    "/api/(.*)": {
-      "src": "/api/(.*)",
-      "dest": "http://localhost:5000/api/$1"
-    },
-    "/(.*)": "index.html"
-  },
-  "environmentVariables": {
-    "REACT_APP_API_URL": "https://healthcare-backend.onrender.com"
-  }
+  "outputDirectory": "dist"
 }
