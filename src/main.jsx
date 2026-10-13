@@ -1,7 +1,43 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 
-const app = window.CARECONNECT || {};
+const defaultUrls = {
+  dashboard: '/dashboard',
+  appointments: '/appointments',
+  book: '/appointments/book',
+  states: '/api/locations/states',
+  districts: '/api/locations/districts',
+  cities: '/api/locations/cities',
+  hospitals: '/api/locations/hospitals',
+  doctorDirectory: '/api/doctors',
+  doctorTemplate: '/admin/doctors/template',
+  doctorUpload: '/admin/doctors/upload',
+  directoryTemplate: '/admin/directory/template',
+  directoryUpload: '/admin/directory/upload',
+  upload: '/upload',
+  viewReport: '/reports',
+  deleteReport: '/reports/delete',
+  explainReport: '/reports/explain',
+  explanation: '/explanation',
+  compare: '/compare',
+  assistant: '/assistant',
+  aiIdeas: '/wellness/ai-ideas',
+  wellness: '/wellness',
+  healthInsights: '/dashboard#health-insights',
+  medication: '/medications',
+  deleteMedication: '/medications/delete',
+  settings: '/settings',
+  profile: '/settings',
+  login: '/login',
+  register: '/register',
+  google: '/auth/google',
+};
+
+const injectedApp = window.CARECONNECT || {};
+const app = {
+  ...injectedApp,
+  urls: {...defaultUrls, ...(injectedApp.urls || {})},
+};
 
 function Icon({name, size = 20}) {
   const paths = {
