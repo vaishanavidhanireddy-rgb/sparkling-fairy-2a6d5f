@@ -35,7 +35,7 @@ def register():
     except Exception:
         flash("That account could not be created. The email may already be registered.", "error")
         return redirect(url_for("index"))
-    return redirect(url_for("reports.dashboard"))
+    return redirect(url_for("reports.welcome"))
 
 
 @auth_bp.post("/login")
@@ -49,7 +49,7 @@ def login():
     session.clear()
     session["user_id"] = user["id"]
     session["email"] = user["email"]
-    return redirect(url_for("reports.dashboard"))
+    return redirect(url_for("reports.welcome"))
 
 
 def get_firebase_admin_app():

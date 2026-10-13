@@ -37,6 +37,14 @@ def dashboard():
     return render_dashboard(**_dashboard_context(session["user_id"]))
 
 
+@reports_bp.get("/welcome")
+@login_required
+def welcome():
+    context = _dashboard_context(session["user_id"])
+    context["page"] = "dashboard"
+    return render_dashboard(**context)
+
+
 @reports_bp.get("/health-insights")
 @login_required
 def health_insights_page():

@@ -67,7 +67,7 @@ def create_app():
     @app.get("/")
     def index():
         if session.get("user_id"):
-            return redirect(url_for("reports.dashboard"))
+            return redirect(url_for("reports.welcome"))
         web_config_keys = ("FIREBASE_API_KEY", "FIREBASE_AUTH_DOMAIN", "FIREBASE_PROJECT_ID", "FIREBASE_APP_ID")
         firebase_config = None
         if all(app.config[key] for key in web_config_keys):

@@ -19,7 +19,7 @@ def _json_value(value):
 
 def common_urls():
     return {
-        "dashboard": url_for("reports.dashboard"), "upload": url_for("reports.upload"),
+        "dashboard": url_for("reports.welcome"), "upload": url_for("reports.upload"),
         "insights": url_for("reports.health_insights_page"),
         "wellnessPage": url_for("reports.wellness_page"),
         "medicationsPage": url_for("reports.medications_page"),
