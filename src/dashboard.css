@@ -71,6 +71,9 @@
 .search-results small { color: #7d909a; font-size: 10px; }
 .notification-link { margin-left: auto; }
 .top-profile { display: flex; align-items: center; gap: 9px; text-decoration: none; }
+.logout-form { flex: 0 0 auto; margin: 0; }
+.hc-app .logout-button { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; gap: 7px; padding: 0 12px; color: #477178; font-weight: 700; cursor: pointer; }
+.hc-app .logout-button:hover { color: #187e7b; border-color: #c8e7e1; background: #f1faf8; }
 
 .hc-main { width: min(1260px, calc(100% - 258px)); min-height: calc(100vh - 74px); margin: 0 0 0 258px; padding: 30px clamp(20px, 4vw, 54px) 32px; }
 .hc-main > .hc-footer { margin: 46px calc(clamp(20px, 4vw, 54px) * -1) -32px; padding-right: clamp(20px, 4vw, 54px); padding-left: clamp(20px, 4vw, 54px); border-color: rgb(218 233 233 / 75%); background: rgb(255 255 255 / 40%); }
@@ -247,6 +250,8 @@
   .notification-link { display: none; }
   .top-profile { gap: 0; }
   .top-profile > span { display: none; }
+  .hc-app .logout-button { width: 38px; min-height: 38px; padding: 0; }
+  .logout-button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .hc-main { width: 100%; min-height: calc(100vh - 63px); margin-left: 0; padding: 19px 15px 25px; }
   .hc-main > .hc-footer { margin: 35px -15px -25px; padding: 13px 15px; }
   .dashboard-home { gap: 19px; }
