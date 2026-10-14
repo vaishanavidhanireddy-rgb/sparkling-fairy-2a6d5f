@@ -5,7 +5,7 @@ import './dashboard.css';
 
 const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'https://healthcare-backend.onrender.com').replace(/\/+$/, '');
 const app = window.CARECONNECT || {
-  view: 'landing',
+  view: window.location.pathname === '/account' ? 'account' : 'landing',
   urls: {
     login: `${backendUrl}/login`,
     register: `${backendUrl}/register`,
