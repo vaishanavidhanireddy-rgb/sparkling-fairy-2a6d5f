@@ -141,18 +141,6 @@ def _postgres_connection(database_url):
     return _PostgresConnection(psycopg2.connect(database_url, cursor_factory=DictCursor))
 
 
-def _appointment_directory_needs_seed(db):
-    """Return True when the bundled directory has not yet been loaded for this database."""
-    for table in ("appointment_states", "appointment_districts", "appointment_locations", "appointment_hospitals"):
-        try:
-            count = db.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-        except Exception:
-            return True
-        if count == 0:
-            return True
-    return False
-
-
 def _seed_attached_appointment_directory(db):
     """Load the bundled hospital finder directory into the appointment tables."""
     data_path = Path(__file__).with_name("appointment_directory.json")
@@ -338,8 +326,7 @@ def init_db(path):
             """)
             for statement in POSTGRES_SCHEMA_MIGRATIONS:
                 db.execute(statement)
-            if _appointment_directory_needs_seed(db):
-                _seed_attached_appointment_directory(db)
+            _seed_attached_appointment_directory(db)
             db.commit()
         except Exception:
             db.rollback()
@@ -533,8 +520,7 @@ def init_db(path):
             db.execute("UPDATE appointment_requests SET booking_mode='legacy_request' WHERE booking_key IS NULL AND appointment_date='' AND booking_mode='demo_request'")
             db.execute("CREATE UNIQUE INDEX IF NOT EXISTS appointment_request_dedupe ON appointment_requests(booking_key) WHERE booking_key IS NOT NULL")
             db.execute("CREATE UNIQUE INDEX IF NOT EXISTS users_firebase_uid ON users(firebase_uid)")
-            if _appointment_directory_needs_seed(db):
-                _seed_attached_appointment_directory(db)
+            _seed_attached_appointment_directory(db)
     finally:
         db.close()
 
