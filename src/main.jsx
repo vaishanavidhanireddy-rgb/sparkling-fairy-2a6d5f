@@ -178,7 +178,7 @@ function AccountPage() {
   const authErrorMessages = {
     login: 'Invalid email or password.',
     'register-details': 'Enter your email, state, and area.',
-    'register-password': 'Use at least 10 password characters, including uppercase and lowercase letters, a number, and a symbol.',
+    'register-password': 'Enter a password.',
     'register-phone': 'Enter your phone in international format, for example +919876543210.',
     'register-account': 'That account could not be created. The email may already be registered.',
   };
@@ -209,14 +209,10 @@ function AccountPage() {
               <input
                 name="password"
                 type="password"
-                minLength="10"
-                pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{10,}"
-                title="Use at least 10 characters, including uppercase and lowercase letters, a number, and a symbol."
                 required
                 autoComplete="new-password"
               />
             </label>
-            <p className="auth-password-hint">Use at least 10 characters, including uppercase and lowercase letters, a number, and a symbol.</p>
             <label>Phone number<input name="phone" type="tel" pattern="\+[1-9][0-9]{7,14}" placeholder="+919876543210" required/></label>
             <label>Country<input name="country" defaultValue="India" required/></label>
             <label>State<input name="state" required maxLength="100"/></label>

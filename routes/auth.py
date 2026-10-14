@@ -9,16 +9,6 @@ from database.models import connection
 auth_bp = Blueprint("auth", __name__)
 
 
-def is_valid_password(password):
-    return (
-        len(password) >= 10
-        and re.search(r"[a-z]", password) is not None
-        and re.search(r"[A-Z]", password) is not None
-        and re.search(r"[0-9]", password) is not None
-        and re.search(r"[^A-Za-z0-9]", password) is not None
-    )
-
-
 @auth_bp.post("/register")
 def register():
     email = request.form.get("email", "").strip().lower()
@@ -30,11 +20,8 @@ def register():
     if not email or not state or not area:
         flash("Enter an email, your state, and your area.", "error")
         return redirect("/account?auth_error=register-details#register")
-    if not is_valid_password(password):
-        flash(
-            "Use at least 10 password characters, including uppercase and lowercase letters, a number, and a symbol.",
-            "error",
-        )
+    if not password:
+        flash("Enter a password.", "error")
         return redirect("/account?auth_error=register-password#register")
     if not re.fullmatch(r"\+[1-9][0-9]{7,14}", phone):
         flash("Enter your phone in international format, for example +919876543210.", "error")
