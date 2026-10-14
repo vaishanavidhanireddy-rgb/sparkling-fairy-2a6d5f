@@ -54,6 +54,11 @@ def register():
     return redirect(url_for("reports.welcome"))
 
 
+@auth_bp.get("/register")
+def register_page():
+    return redirect("/account#register")
+
+
 @auth_bp.post("/login")
 def login():
     email = request.form.get("email", "").strip().lower()
@@ -66,6 +71,11 @@ def login():
     session["user_id"] = user["id"]
     session["email"] = user["email"]
     return redirect(url_for("reports.welcome"))
+
+
+@auth_bp.get("/login")
+def login_page():
+    return redirect("/account#login")
 
 
 def get_firebase_admin_app():
