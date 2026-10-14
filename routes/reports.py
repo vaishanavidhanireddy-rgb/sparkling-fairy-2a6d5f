@@ -192,7 +192,7 @@ def save_wellness():
 @login_required
 def generate_wellness_suggestions():
     if request.form.get("share_daily_log") != "yes":
-        flash("Confirm before sending today's wellness log to Groq for AI suggestions.", "error")
+        flash("Confirm before sending today's wellness log to NVIDIA NIM for AI suggestions.", "error")
         return redirect(url_for("reports.wellness_page"))
     with connection(current_app.config["DATABASE_PATH"]) as db:
         log = db.execute("SELECT * FROM wellness_logs WHERE user_id=? AND log_date=?",
@@ -201,8 +201,8 @@ def generate_wellness_suggestions():
         flash("Save today's wellness check-in before requesting AI ideas.", "error")
         return redirect(url_for("reports.wellness_page"))
     try:
-        suggestions = suggest_wellness(log, current_app.config.get("GROQ_API_KEY", ""),
-                                      model=current_app.config.get("GROQ_MODEL", "qwen/qwen3.8-27b"))
+        suggestions = suggest_wellness(log, current_app.config.get("NVIDIA_NIM_API_KEY", ""),
+                                      model=current_app.config.get("NVIDIA_NIM_MODEL", "nvidia/nemotron-nano-12b-v2-vl"))
     except RuntimeError as exc:
         context = _dashboard_context(session["user_id"])
         context["ai_wellness_error"] = str(exc)
@@ -263,8 +263,8 @@ def explanation():
         question = request.form.get("question", "").strip()[:1000]
         if question:
             try:
-                answer = explain_symptom(question, current_app.config.get("GROQ_API_KEY", ""),
-                                         model=current_app.config.get("GROQ_MODEL", "qwen/qwen3.8-27b"))
+                answer = explain_symptom(question, current_app.config.get("NVIDIA_NIM_API_KEY", ""),
+                                         model=current_app.config.get("NVIDIA_NIM_MODEL", "nvidia/nemotron-nano-12b-v2-vl"))
             except RuntimeError as exc:
                 error = str(exc)
     return render_dashboard(reports=reports, page="explanation", question=question, answer=answer, error=error)
@@ -281,8 +281,8 @@ def assistant_api():
         return {"error": "Enter a question first."}, 400
     question = question.strip()[:1000]
     try:
-        model = current_app.config.get("GROQ_MODEL", "qwen/qwen3.8-27b")
-        api_key = current_app.config.get("GROQ_API_KEY", "")
+        model = current_app.config.get("NVIDIA_NIM_MODEL", "nvidia/nemotron-nano-12b-v2-vl")
+        api_key = current_app.config.get("NVIDIA_NIM_API_KEY", "")
         report_id = payload.get("report_id")
         if report_id is not None:
             try:
@@ -398,8 +398,8 @@ def explain_saved_report(report_id):
     if not report:
         abort(404)
     try:
-        model = current_app.config.get("GROQ_MODEL", "qwen/qwen3.8-27b")
-        api_key = current_app.config.get("GROQ_API_KEY", "")
+        model = current_app.config.get("NVIDIA_NIM_MODEL", "nvidia/nemotron-nano-12b-v2-vl")
+        api_key = current_app.config.get("NVIDIA_NIM_API_KEY", "")
         if report["file_data"] and report["mime_type"]:
             explanation = explain_upload(bytes(report["file_data"]), report["mime_type"], api_key,
                                          model=model, extracted_text=report["content"])

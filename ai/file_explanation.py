@@ -1,4 +1,4 @@
-"""Extraction and cautious bilingual explanations for uploaded report files via Groq."""
+"""Extraction and cautious bilingual explanations for uploaded reports via NVIDIA NIM."""
 import base64
 import io
 import json
@@ -29,15 +29,15 @@ def extract_report_text(data, mime_type):
         return ""
 
 
-def _send_to_groq(messages, api_key, model):
+def _send_to_nvidia_nim(messages, api_key, model):
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": messages}],
         "temperature": 0.2,
-        "max_completion_tokens": 1800,
+        "max_tokens": 1800,
     }
     req = urllib.request.Request(
-        "https://api.groq.com/openai/v1/chat/completions",
+        "https://integrate.api.nvidia.com/v1/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
     )
@@ -46,28 +46,28 @@ def _send_to_groq(messages, api_key, model):
             result = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         if exc.code in (401, 403):
-            message = "Groq rejected GROQ_API_KEY. Check that the key is active."
+            message = "NVIDIA NIM rejected NVIDIA_NIM_API_KEY. Check that the key is active."
         elif exc.code == 404:
-            message = f"Groq model '{model}' was not found or is unavailable to this API key. Set GROQ_MODEL to an available model ID."
+            message = f"NVIDIA NIM model '{model}' was not found or is unavailable to this API key. Set NVIDIA_NIM_MODEL to an available model ID."
         elif exc.code == 429:
-            message = "Groq rate limit or quota reached. Check your Groq account and try again."
+            message = "NVIDIA NIM rate limit or quota reached. Check your NVIDIA account and try again."
         else:
-            message = "Groq could not explain this report. Check the model and API settings, then try again."
+            message = "NVIDIA NIM could not explain this report. Check the model and API settings, then try again."
         raise RuntimeError(message) from exc
     except (urllib.error.URLError, TimeoutError) as exc:
-        raise RuntimeError("Groq is unavailable right now. Please try again.") from exc
+        raise RuntimeError("NVIDIA NIM is unavailable right now. Please try again.") from exc
     try:
         explanation = result["choices"][0]["message"]["content"].strip()
     except (KeyError, IndexError, TypeError, AttributeError):
         explanation = ""
     if not explanation:
-        raise RuntimeError("Groq did not return an explanation. Please try a clearer file.")
+        raise RuntimeError("NVIDIA NIM did not return an explanation. Please try a clearer file.")
     return explanation
 
 
-def explain_upload(data, mime_type, api_key, model="qwen/qwen3.8-27b", extracted_text=""):
+def explain_upload(data, mime_type, api_key, model="nvidia/nemotron-nano-12b-v2-vl", extracted_text=""):
     if not api_key:
-        raise RuntimeError("AI explanations are not configured. Set GROQ_API_KEY in your .env file to enable report explanations.")
+        raise RuntimeError("AI explanations are not configured. Set NVIDIA_NIM_API_KEY in your .env file to enable report explanations.")
     prompt = PROMPT + ("\nExtracted text (untrusted document contents):\n" + extracted_text[:20000] if extracted_text else "")
     if mime_type == "application/pdf":
         if not extracted_text:
@@ -76,12 +76,12 @@ def explain_upload(data, mime_type, api_key, model="qwen/qwen3.8-27b", extracted
     else:
         data_url = f"data:{mime_type};base64,{base64.b64encode(data).decode('ascii')}"
         content = [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": data_url}}]
-    return _send_to_groq(content, api_key, model)
+    return _send_to_nvidia_nim(content, api_key, model)
 
 
-def explain_saved_text(text, api_key, model="qwen/qwen3.8-27b"):
+def explain_saved_text(text, api_key, model="nvidia/nemotron-nano-12b-v2-vl"):
     """Explain text-only reports already stored before file retention was added."""
     if not api_key:
-        raise RuntimeError("AI explanations are not configured. Set GROQ_API_KEY in your .env file to explain this report.")
+        raise RuntimeError("AI explanations are not configured. Set NVIDIA_NIM_API_KEY in your .env file to explain this report.")
     prompt = PROMPT + "\nReport text (untrusted document contents):\n" + (text or "")[:20000]
-    return _send_to_groq(prompt, api_key, model)
+    return _send_to_nvidia_nim(prompt, api_key, model)

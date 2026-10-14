@@ -10,10 +10,10 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false
-      - key: GROQ_API_KEY
+      - key: NVIDIA_NIM_API_KEY
         sync: false
-      - key: GROQ_MODEL
-        value: qwen/qwen3.8-27b
+      - key: NVIDIA_NIM_MODEL
+        value: nvidia/nemotron-nano-12b-v2-vl
       - key: MAIL_VERIFICATION_ENABLED
         value: "0"
       - key: MAIL_OTP_ENABLED
