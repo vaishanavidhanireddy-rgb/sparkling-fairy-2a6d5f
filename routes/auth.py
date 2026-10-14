@@ -9,6 +9,16 @@ from database.models import connection
 auth_bp = Blueprint("auth", __name__)
 
 
+def is_valid_password(password):
+    return (
+        len(password) >= 10
+        and re.search(r"[a-z]", password) is not None
+        and re.search(r"[A-Z]", password) is not None
+        and re.search(r"[0-9]", password) is not None
+        and re.search(r"[^A-Za-z0-9]", password) is not None
+    )
+
+
 @auth_bp.post("/register")
 def register():
     email = request.form.get("email", "").strip().lower()
@@ -17,12 +27,18 @@ def register():
     state = request.form.get("state", "").strip()[:100]
     area = request.form.get("area", "").strip()[:100]
     country = request.form.get("country", "India").strip()[:100] or "India"
-    if not email or len(password) < 10 or not state or not area:
-        flash("Enter an email, a password with at least 10 characters, your state, and your area.", "error")
-        return redirect(url_for("index"))
+    if not email or not state or not area:
+        flash("Enter an email, your state, and your area.", "error")
+        return redirect("/account?auth_error=register-details#register")
+    if not is_valid_password(password):
+        flash(
+            "Use at least 10 password characters, including uppercase and lowercase letters, a number, and a symbol.",
+            "error",
+        )
+        return redirect("/account?auth_error=register-password#register")
     if not re.fullmatch(r"\+[1-9][0-9]{7,14}", phone):
         flash("Enter your phone in international format, for example +919876543210.", "error")
-        return redirect(url_for("index"))
+        return redirect("/account?auth_error=register-phone#register")
     try:
         with connection(current_app.config["DATABASE_PATH"]) as db:
             cursor = db.execute(
@@ -34,7 +50,7 @@ def register():
             session["email"] = email
     except Exception:
         flash("That account could not be created. The email may already be registered.", "error")
-        return redirect(url_for("index"))
+        return redirect("/account?auth_error=register-account#register")
     return redirect(url_for("reports.welcome"))
 
 
@@ -45,7 +61,7 @@ def login():
         user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
     if not user or not user["password_hash"] or not check_password_hash(user["password_hash"], request.form.get("password", "")):
         flash("Invalid email or password.", "error")
-        return redirect(url_for("index"))
+        return redirect("/account?auth_error=login#login")
     session.clear()
     session["user_id"] = user["id"]
     session["email"] = user["email"]

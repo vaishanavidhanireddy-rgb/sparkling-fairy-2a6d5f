@@ -3,12 +3,44 @@ import {createRoot} from 'react-dom/client';
 import './main.css';
 import './dashboard.css';
 
-const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'https://healthcare-backend.onrender.com').replace(/\/+$/, '');
 const app = window.CARECONNECT || {
   view: window.location.pathname === '/account' ? 'account' : 'landing',
   urls: {
-    login: `${backendUrl}/login`,
-    register: `${backendUrl}/register`,
+    dashboard: '/welcome',
+    upload: '/upload',
+    insights: '/health-insights',
+    wellnessPage: '/wellness',
+    medicationsPage: '/medications',
+    explanation: '/explanation',
+    compare: '/compare',
+    history: '/history',
+    settings: '/settings',
+    appointments: '/appointments',
+    logout: '/logout',
+    login: '/login',
+    register: '/register',
+    profile: '/complete-profile',
+    google: '/google',
+    states: '/api/appointments/states',
+    districts: '/api/appointments/districts',
+    cities: '/api/appointments/cities',
+    hospitals: '/api/appointments/hospitals',
+    doctors: '/api/appointments/hospitals/0/doctors',
+    doctorDirectory: '/api/appointments/doctors',
+    book: '/appointments/book',
+    wellness: '/wellness',
+    medication: '/medications',
+    deleteMedication: '/medications/0/delete',
+    aiIdeas: '/wellness/suggestions',
+    assistant: '/api/assistant',
+    healthInsights: '/api/health-insights',
+    viewReport: '/reports/0',
+    deleteReport: '/reports/0/delete',
+    explainReport: '/reports/0/explain',
+    directoryUpload: '/appointments/directory/upload',
+    directoryTemplate: '/appointments/directory/template.csv',
+    doctorUpload: '/appointments/doctors/upload',
+    doctorTemplate: '/appointments/doctors/template.csv',
   },
   flashes: [],
 };
@@ -140,7 +172,63 @@ function DoctorIllustration(){return <div className="doctor-scene" role="img" ar
 
 function AuthPage(){const [language,setLanguage]=useState('en');const copy=language==='es'?{features:'Beneficios',explore:'Ver beneficios',login:'Iniciar sesión',start:'Crear cuenta',subtitle:'Entiende tus informes, organiza tus registros y prepara mejores conversaciones con tu equipo médico.',understand:'Entender',organize:'Organizar',manage:'Gestionar',understandBody:'Explicaciones sencillas para los términos de tus informes.',organizeBody:'Tus informes y datos de salud en un solo espacio privado.',manageBody:'Revisa la información y prepara preguntas para tu profesional de salud.'}:{features:'Benefits',explore:'Explore benefits',login:'Log in',start:'Get started',subtitle:'Understand your reports, keep your records together, and prepare for better conversations with your care team.',understand:'Understand',organize:'Organize',manage:'Manage',understandBody:'Get clear explanations of terms in your reports.',organizeBody:'Keep your health records together in one private space.',manageBody:'Review your information and prepare questions for your care team.'};return <div className="hc-landing"><header className="landing-nav" id="top"><Logo/><nav aria-label="Main navigation"><a href="#features">{copy.features}</a><label className="language-picker"><span className="sr-only">Language</span><select value={language} onChange={e=>setLanguage(e.target.value)}><option value="en">English</option><option value="es">Español</option></select></label><a href="/account#login">{copy.login}</a><a className="primary-button" href="/account#register">{copy.start}</a></nav></header><main className="landing-main"><section className="landing-hero landing-hero-public"><div className="landing-hero-copy"><span className="landing-kicker"><Icon name="heart" size={15}/> WELCOME TO YOUR HEALTH SPACE</span><h1>Welcome to Healthcare</h1><p>{copy.subtitle}</p><div className="landing-actions"><a className="primary-button" href="#features">{copy.explore}<Icon name="arrow" size={17}/></a><a className="secondary-button" href="/account#register">{copy.start}</a></div></div></section><section className="landing-features" id="features"><article><span className="feature-glyph"><Icon name="file"/></span><span className="feature-step">01</span><h2>{copy.understand}</h2><p>{copy.understandBody}</p></article><article><span className="feature-glyph mint"><Icon name="shield"/></span><span className="feature-step">02</span><h2>{copy.organize}</h2><p>{copy.organizeBody}</p></article><article><span className="feature-glyph lavender"><Icon name="heart"/></span><span className="feature-step">03</span><h2>{copy.manage}</h2><p>{copy.manageBody}</p></article></section><p className="landing-disclaimer">AI-generated information is educational and does not replace professional medical advice.</p></main><Footer/></div>}
 
-function AccountPage(){return <div className="hc-landing account-view"><header className="landing-nav"><Logo/><a className="secondary-button" href="/">Back to Healthcare</a></header><main className="landing-main"><section className="landing-auth" id="account"><div className="landing-auth-heading"><p className="hc-eyebrow">YOUR PRIVATE HEALTH WORKSPACE</p><h1>Sign in or create an account</h1><p>Reports and saved information are tied to your signed-in account.</p></div><div className="auth-panels"><form id="login" className="auth-card" method="post" action={app.urls.login}><h2>Log in</h2><p>Continue to your Healthcare dashboard.</p>{app.firebase&&<><button type="button" className="google-button" onClick={googleLogin}>Continue with Google</button><p className="auth-google-error" role="alert"/></>}<label>Email<input name="email" type="email" required autoComplete="email"/></label><label>Password<input name="password" type="password" required autoComplete="current-password"/></label><button className="primary-button">Log in</button></form><form id="register" className="auth-card" method="post" action={app.urls.register}><h2>Create your account</h2><p>Start organizing your health information.</p><label>Email<input name="email" type="email" required autoComplete="email"/></label><label>Password<input name="password" type="password" minLength="10" required autoComplete="new-password"/></label><label>Phone number<input name="phone" type="tel" pattern="\+[1-9][0-9]{7,14}" placeholder="+919876543210" required/></label><label>Country<input name="country" defaultValue="India" required/></label><label>State<input name="state" required maxLength="100"/></label><label>Area / city<input name="area" required maxLength="100"/></label><button className="primary-button">Get started</button></form></div></section></main><Footer/></div>}async function googleLogin(){const button=document.querySelector('.google-button');if(button)button.disabled=true;try{const firebase=app.firebase;if(!firebase)throw Error('Google sign-in is not configured.');const sdk=await import('https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js');const authSdk=await import('https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js');const instance=sdk.initializeApp(firebase);const result=await authSdk.signInWithPopup(authSdk.getAuth(instance),new authSdk.GoogleAuthProvider());const response=await api(app.urls.google,{method:'POST',body:JSON.stringify({idToken:await result.user.getIdToken()})});location.assign(response.needsProfile?app.urls.profile:app.urls.dashboard)}catch(error){const msg=document.querySelector('.auth-google-error');if(msg)msg.textContent=error.message;else alert(error.message);if(button)button.disabled=false}}
+function AccountPage() {
+  const authError = new URLSearchParams(window.location.search).get('auth_error');
+  const authErrorMessages = {
+    login: 'Invalid email or password.',
+    'register-details': 'Enter your email, state, and area.',
+    'register-password': 'Use at least 10 password characters, including uppercase and lowercase letters, a number, and a symbol.',
+    'register-phone': 'Enter your phone in international format, for example +919876543210.',
+    'register-account': 'That account could not be created. The email may already be registered.',
+  };
+  return <div className="hc-landing account-view">
+    <header className="landing-nav"><Logo/><a className="secondary-button" href="/">Back to Healthcare</a></header>
+    <main className="landing-main">
+      <section className="landing-auth" id="account">
+        <div className="landing-auth-heading">
+          <p className="hc-eyebrow">YOUR PRIVATE HEALTH WORKSPACE</p>
+          <h1>Sign in or create an account</h1>
+          <p>Reports and saved information are tied to your signed-in account.</p>
+          {authErrorMessages[authError] && <p className="text-error" role="alert">{authErrorMessages[authError]}</p>}
+        </div>
+        <div className="auth-panels">
+          <form id="login" className="auth-card" method="post" action={app.urls.login}>
+            <h2>Log in</h2>
+            <p>Continue to your Healthcare dashboard.</p>
+            {app.firebase && <><button type="button" className="google-button" onClick={googleLogin}>Continue with Google</button><p className="auth-google-error" role="alert"/></>}
+            <label>Email<input name="email" type="email" required autoComplete="email"/></label>
+            <label>Password<input name="password" type="password" required autoComplete="current-password"/></label>
+            <button className="primary-button">Log in</button>
+          </form>
+          <form id="register" className="auth-card" method="post" action={app.urls.register}>
+            <h2>Create your account</h2>
+            <p>Start organizing your health information.</p>
+            <label>Email<input name="email" type="email" required autoComplete="email"/></label>
+            <label>Password
+              <input
+                name="password"
+                type="password"
+                minLength="10"
+                pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{10,}"
+                title="Use at least 10 characters, including uppercase and lowercase letters, a number, and a symbol."
+                required
+                autoComplete="new-password"
+              />
+            </label>
+            <p className="auth-password-hint">Use at least 10 characters, including uppercase and lowercase letters, a number, and a symbol.</p>
+            <label>Phone number<input name="phone" type="tel" pattern="\+[1-9][0-9]{7,14}" placeholder="+919876543210" required/></label>
+            <label>Country<input name="country" defaultValue="India" required/></label>
+            <label>State<input name="state" required maxLength="100"/></label>
+            <label>Area / city<input name="area" required maxLength="100"/></label>
+            <button className="primary-button">Get started</button>
+          </form>
+        </div>
+      </section>
+    </main>
+    <Footer/>
+  </div>
+}
+async function googleLogin(){const button=document.querySelector('.google-button');if(button)button.disabled=true;try{const firebase=app.firebase;if(!firebase)throw Error('Google sign-in is not configured.');const sdk=await import('https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js');const authSdk=await import('https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js');const instance=sdk.initializeApp(firebase);const result=await authSdk.signInWithPopup(authSdk.getAuth(instance),new authSdk.GoogleAuthProvider());const response=await api(app.urls.google,{method:'POST',body:JSON.stringify({idToken:await result.user.getIdToken()})});location.assign(response.needsProfile?app.urls.profile:app.urls.dashboard)}catch(error){const msg=document.querySelector('.auth-google-error');if(msg)msg.textContent=error.message;else alert(error.message);if(button)button.disabled=false}}
 function ProfileCompletion(){const account=app.account||{};return <div className="auth-page"><header className="auth-header"><Logo/></header><main className="profile-complete"><h1>Complete your profile</h1><p>Add contact and location details to finish setting up your account.</p><form className="auth-card" method="post"><label>Phone number<input name="phone" type="tel" pattern="\+[1-9][0-9]{7,14}" required defaultValue={account.phone||''}/></label><label>Country<input name="country" required defaultValue={account.country||'India'}/></label><label>State<input name="state" required defaultValue={account.state||''}/></label><label>Area / city<input name="area" required defaultValue={account.area||''}/></label><button className="primary-button">Save and continue</button></form></main><FlashMessages/><Footer/></div>}
 
 function App(){const [menuOpen,setMenuOpen]=useState(false);useEffect(()=>{document.title=app.page==='appointments'?'Appointments | Healthcare':app.view==='landing'?'Healthcare | AI-Powered Personal Health Copilot':`${app.page||'Home'} | Healthcare`},[]);if(app.view==='landing')return <AuthPage/>;if(app.view==='account')return <AccountPage/>;if(app.view==='profile')return <ProfileCompletion/>;return <div className="hc-app"><Topbar onMenu={()=>setMenuOpen(true)}/><Sidebar page={app.page} open={menuOpen} close={()=>setMenuOpen(false)}/><main className="hc-main"><FlashMessages/><DashboardContent/><Footer/></main></div>}
