@@ -180,7 +180,8 @@ function AccountPage() {
     'register-details': 'Enter your email, state, and area.',
     'register-password': 'Enter a password.',
     'register-phone': 'Enter your phone in international format, for example +919876543210.',
-    'register-account': 'That account could not be created. The email may already be registered.',
+    'register-duplicate': 'An account with this email already exists. Log in instead.',
+    'register-account': 'We couldn’t save your account because of a server or database error. Please try again later.',
   };
   return <div className="hc-landing account-view">
     <header className="landing-nav"><Logo/><a className="secondary-button" href="/">Back to Healthcare</a></header>

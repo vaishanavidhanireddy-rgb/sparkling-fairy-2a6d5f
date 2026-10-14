@@ -1,5 +1,6 @@
 import secrets
 import re
+import sqlite3
 
 from flask import Blueprint, current_app, flash, jsonify, redirect, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -35,8 +36,13 @@ def register():
             session.clear()
             session["user_id"] = cursor.lastrowid
             session["email"] = email
-    except Exception:
-        flash("That account could not be created. The email may already be registered.", "error")
+    except Exception as error:
+        current_app.logger.exception("Account registration failed")
+        is_duplicate = isinstance(error, sqlite3.IntegrityError) or getattr(error, "pgcode", None) == "23505"
+        if is_duplicate:
+            flash("An account with this email already exists. Log in instead.", "error")
+            return redirect("/account?auth_error=register-duplicate#register")
+        flash("We couldn't save your account because of a server or database error. Please try again later.", "error")
         return redirect("/account?auth_error=register-account#register")
     return redirect(url_for("reports.welcome"))
 
