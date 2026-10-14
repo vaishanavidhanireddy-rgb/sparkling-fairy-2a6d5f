@@ -23,7 +23,7 @@ Copy-Item .env.example .env
 python healthcare.py
 ```
 
-Open http://127.0.0.1:5000. Set a long random `SECRET_KEY` in `.env`. AI features require `MISTRAL_API_KEY`; the default model is `ministral-14b-latest` and can be changed with `MISTRAL_MODEL`. Google sign-in is optional: set the Firebase web configuration values shown in `.env.example` to enable it.
+Open http://127.0.0.1:5000. Set a long random `SECRET_KEY` and `GROQ_API_KEY` in `.env`. AI features use Groq with `qwen/qwen3.8-27b` by default; choose another supported model with `GROQ_MODEL` if needed. Google sign-in is optional: set the Firebase web configuration values shown in `.env.example` to enable it.
 
 PDF text extraction uses pypdf. Image OCR uses the Tesseract executable; install Tesseract OCR separately and ensure `tesseract.exe` is on PATH. The AI provider may still read image or PDF files when local extraction returns no text.
 
@@ -55,6 +55,8 @@ gunicorn healthcare:app
 ```
 
 Create a Supabase project, then add the project's PostgreSQL connection string to Render as the `DATABASE_URL` secret. Use Supabase's **Session pooler** connection string for a long-running Render web service; require SSL and do not use the Supabase anon key or service-role key as the database password. Keep this value in Render's environment settings and never commit it. The app creates and migrates its tables on startup. The production database starts empty, so register accounts again on the deployed app; local SQLite accounts are not copied.
+
+Add your Groq API key to Render as the `GROQ_API_KEY` secret. The default model is `qwen/qwen3.8-27b`; change `GROQ_MODEL` only to a model enabled for your Groq account. Never put the API key in source control or frontend variables.
 
 Wait for Render to report a successful deployment. Open the backend's base URL, such as `https://healthcare-backend-0s3d.onrender.com/`. The base URL should show the Healthcare page and `/assets/app.js` should load successfully. Vercel proxies all paths to this Render app.
 

@@ -2,7 +2,7 @@
 
 Flask-based personal report workspace. Existing SQLite accounts and reports remain in `quantum_healthcare.sqlite3`.
 
-The dashboard also supports user-entered medicine reminders, daily water/sleep/exercise/step logs, a seven-day step view, and optional bilingual AI wellness ideas. Browser medicine reminders work only while the dashboard is open and browser notifications are allowed. Medicine names and schedules must come from the user's clinician. AI wellness ideas require a separate opt-in and send only that day's wellness values and selected focus to Mistral.
+The dashboard also supports user-entered medicine reminders, daily water/sleep/exercise/step logs, a seven-day step view, and optional bilingual AI wellness ideas. Browser medicine reminders work only while the dashboard is open and browser notifications are allowed. Medicine names and schedules must come from the user's clinician. AI wellness ideas require a separate opt-in and send only that day's wellness values and selected focus to Groq.
 
 The Doctor Appointments page provides dependent State → District → City/Town → Hospital → Doctor selectors. State and district options come from the Government of India's monthly [LGD States](https://www.data.gov.in/resource/local-government-directory-lgd-states) and [LGD Districts](https://www.data.gov.in/resource/local-government-directory-lgd-districts) datasets; city/town options come from [LGD Urban Local Bodies with PIN Codes](https://www.data.gov.in/resource/local-government-directory-lgd-local-bodies-pin-codes). City/town therefore means an LGD urban local body, not every village, postal locality, or informal neighborhood. Hospital listings come from the [National Hospital Directory](https://www.data.gov.in/resource/national-hospital-directory-geo-code-and-additional-parameters-updated-till-last-month). These sources do not include individual doctor names. Doctor names must be imported separately and tied to an exact hospital/state/district/city match; check registrations in the [NMC public register](https://nmr.nmc.org.in/search-doctor).
 
@@ -57,7 +57,7 @@ Copy-Item .env.example .env
 python app.py
 ```
 
-Open http://127.0.0.1:5000. Set a long random `SECRET_KEY` and your `MISTRAL_API_KEY` in `.env` before using AI features. The default Mistral model is `ministral-14b-latest`; override it with `MISTRAL_MODEL` if needed. The app displays an explicit configuration message when the AI key is missing. Google sign-in is optional and requires the Firebase settings described in `FIREBASE_SETUP.md`.
+Open http://127.0.0.1:5000. Set a long random `SECRET_KEY` and your `GROQ_API_KEY` in `.env` before using AI features. The default Groq model is `qwen/qwen3.8-27b`; override it with `GROQ_MODEL` if needed. The app displays an explicit configuration message when the AI key is missing. Google sign-in is optional and requires the Firebase settings described in `FIREBASE_SETUP.md`.
 
 Password reset uses a one-time link that expires after 60 minutes. To deliver reset emails, configure `PUBLIC_BASE_URL`, `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS`, `MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_DEFAULT_SENDER` in `.env` with your SMTP provider's values. Without SMTP configuration the UI still responds safely, but no email can be delivered.
 
