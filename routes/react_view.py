@@ -1,8 +1,17 @@
 """Flask-to-React page bootstrap helpers."""
 from collections.abc import Mapping
 from datetime import date, datetime
+from pathlib import Path
 
 from flask import get_flashed_messages, render_template, session, url_for
+
+
+def _asset_version():
+    asset_dir = Path(__file__).resolve().parent.parent / "dist" / "assets"
+    return "-".join(
+        str((asset_dir / filename).stat().st_mtime_ns)
+        for filename in ("index.css", "app.js")
+    )
 
 
 def _json_value(value):
@@ -53,7 +62,7 @@ def render_react_page(view, **context):
     props = _json_value(context)
     props.update(view=view, email=session.get("email", ""), urls=common_urls(),
                  flashes=get_flashed_messages(with_categories=True))
-    return render_template("react.html", react_props=props)
+    return render_template("react.html", react_props=props, asset_version=_asset_version())
 
 
 def render_dashboard(**context):

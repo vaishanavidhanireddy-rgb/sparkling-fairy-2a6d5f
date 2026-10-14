@@ -1,8 +1,11 @@
 """SQLite and PostgreSQL persistence layer for the healthcare app."""
 import os
+import json
 import re
 import sqlite3
 from contextlib import contextmanager
+from html import unescape
+from pathlib import Path
 
 
 POSTGRES_SCHEMA_MIGRATIONS = (
@@ -136,6 +139,67 @@ def _postgres_connection(database_url):
     from psycopg2.extras import DictCursor
 
     return _PostgresConnection(psycopg2.connect(database_url, cursor_factory=DictCursor))
+
+
+def _appointment_directory_needs_seed(db):
+    """Return True when the bundled directory has not yet been loaded for this database."""
+    for table in ("appointment_states", "appointment_districts", "appointment_locations", "appointment_hospitals"):
+        try:
+            count = db.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        except Exception:
+            return True
+        if count == 0:
+            return True
+    return False
+
+
+def _seed_attached_appointment_directory(db):
+    """Load the bundled hospital finder directory into the appointment tables."""
+    data_path = Path(__file__).with_name("appointment_directory.json")
+    if not data_path.is_file():
+        return
+    data = json.loads(data_path.read_text(encoding="utf-8-sig"))
+    source_url = "bundled:find-hospital-final.html"
+
+    states = {row["id"]: unescape(row["name"]).strip() for row in data["states"]}
+    districts = {row["id"]: (states[row["stateId"]], unescape(row["name"]).strip())
+                 for row in data["districts"]}
+    cities = {row["id"]: (districts[row["districtId"]][0], districts[row["districtId"]][1],
+                           unescape(row["name"]).strip()) for row in data["cities"]}
+
+    db.executemany(
+        "INSERT INTO appointment_states(state,source_code,source_url,active) VALUES(?,?,?,1) ON CONFLICT DO NOTHING",
+        [(name, f"attached-{state_id}", source_url) for state_id, name in states.items()],
+    )
+    db.executemany(
+        "INSERT INTO appointment_districts(state,district,source_code,source_url,active) VALUES(?,?,?,?,1) ON CONFLICT DO NOTHING",
+        [(state, district, f"attached-{district_id}", source_url)
+         for district_id, (state, district) in districts.items()],
+    )
+    db.executemany(
+        "INSERT INTO appointment_locations(state,district,city,source_code,source_url,active) VALUES(?,?,?,?,?,1) ON CONFLICT DO NOTHING",
+        [(state, district, city, f"attached-{city_id}", source_url)
+         for city_id, (state, district, city) in cities.items()],
+    )
+
+    hospital_rows = []
+    for row in data["hospitals"]:
+        state, district, city = cities[row["cityId"]]
+        name = unescape(row["name"]).strip()
+        address = unescape(row.get("address", "")).strip()
+        hospital_rows.append((
+            name, state, district, city, address, address,
+            unescape(row.get("phone", "")).strip(), "", "", "", "", "",
+            "attached_directory", str(row["id"]), source_url,
+        ))
+    db.executemany(
+        """INSERT INTO appointment_hospitals
+           (hospital_name,state,district,city,area,address,phone,category,care_type,specialties,pincode,
+            coordinates,source_type,source_record_id,source_url)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+           ON CONFLICT(hospital_name,state,district,city,area) DO NOTHING""",
+        hospital_rows,
+    )
 
 
 def init_db(path):
@@ -274,6 +338,8 @@ def init_db(path):
             """)
             for statement in POSTGRES_SCHEMA_MIGRATIONS:
                 db.execute(statement)
+            if _appointment_directory_needs_seed(db):
+                _seed_attached_appointment_directory(db)
             db.commit()
         except Exception:
             db.rollback()
@@ -467,6 +533,8 @@ def init_db(path):
             db.execute("UPDATE appointment_requests SET booking_mode='legacy_request' WHERE booking_key IS NULL AND appointment_date='' AND booking_mode='demo_request'")
             db.execute("CREATE UNIQUE INDEX IF NOT EXISTS appointment_request_dedupe ON appointment_requests(booking_key) WHERE booking_key IS NOT NULL")
             db.execute("CREATE UNIQUE INDEX IF NOT EXISTS users_firebase_uid ON users(firebase_uid)")
+            if _appointment_directory_needs_seed(db):
+                _seed_attached_appointment_directory(db)
     finally:
         db.close()
 

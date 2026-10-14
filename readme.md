@@ -6,7 +6,7 @@ The dashboard includes private report uploads, optional AI explanations, medicat
 
 ## Appointment directory status
 
-The appointment page supports state, district, city/town, hospital, and doctor selection. However, this repository checkout does **not** include the location-import scripts or the source datasets, so the state/district/city selectors may be empty until the corresponding database tables are populated. The CSV upload tools in the signed-in appointment page are only available to addresses configured in `HOSPITAL_ADMIN_EMAILS`; they upload hospital and doctor records, not the missing geographic state/district/city data.
+The appointment page supports state, district, city/town, hospital, and doctor selection. At startup, the bundled `database/appointment_directory.json` populates the state, district, city, and hospital tables from the supplied hospital finder page. The supplied data contains no doctor entries, so doctors remain unavailable until imported separately. The CSV upload tools in the signed-in appointment page are only available to addresses configured in `HOSPITAL_ADMIN_EMAILS`.
 
 Hospital listings are not live availability. Doctor names are not supplied by the Government of India's [National Hospital Directory](https://www.data.gov.in/resource/national-hospital-directory-geo-code-and-additional-parameters-updated-till-last-month). Doctor CSV rows must match an existing hospital by `hospital_name,state,district,city`. The doctor CSV template is available from the admin tools. Imported doctor records are marked unverified; check registrations in the [NMC public register](https://nmr.nmc.org.in/search-doctor). Date/time submissions save **demo requests only**; they are not sent to a hospital and do not confirm an appointment.
 
@@ -23,7 +23,7 @@ Copy-Item .env.example .env
 python healthcare.py
 ```
 
-Open http://127.0.0.1:5000. Set a long random `SECRET_KEY` and `NVIDIA_NIM_API_KEY` in `.env`. AI features use NVIDIA NIM with `meta/llama-3.2-11b-vision-instruct` by default; choose another supported model with `NVIDIA_NIM_MODEL` if needed. Google sign-in is optional: set the Firebase web configuration values shown in `.env.example` to enable it.
+Open http://127.0.0.1:5000. Set a long random `SECRET_KEY` and `NVIDIA_NIM_API_KEY` in `.env`. AI features use NVIDIA NIM with `meta/llama-3.2-11b-vision-instruct` by default; choose another currently listed vision-capable model with `NVIDIA_NIM_MODEL` if needed. Google sign-in is optional: set the Firebase web configuration values shown in `.env.example` to enable it.
 
 PDF text extraction uses pypdf. Image OCR uses the Tesseract executable; install Tesseract OCR separately and ensure `tesseract.exe` is on PATH. The AI provider may still read image or PDF files when local extraction returns no text.
 
@@ -56,7 +56,7 @@ gunicorn healthcare:app
 
 Create a Supabase project, then add the project's PostgreSQL connection string to Render as the `DATABASE_URL` secret. Use Supabase's **Session pooler** connection string for a long-running Render web service; require SSL and do not use the Supabase anon key or service-role key as the database password. Keep this value in Render's environment settings and never commit it. The app creates and migrates its tables on startup. The production database starts empty, so register accounts again on the deployed app; local SQLite accounts are not copied.
 
-Add your NVIDIA NIM API key to Render as the `NVIDIA_NIM_API_KEY` secret. The default model is `meta/llama-3.2-11b-vision-instruct`; Set `NVIDIA_NIM_MODEL` to a currently listed vision-capable model; update the Render value and redeploy if it is already set. Never put the API key in source control or frontend variables.
+Add your NVIDIA NIM API key to Render as the `NVIDIA_NIM_API_KEY` secret. Set `NVIDIA_NIM_MODEL` to `meta/llama-3.2-11b-vision-instruct` or another currently listed vision-capable model. If `NVIDIA_NIM_MODEL` already exists in Render, update its value and redeploy. Never put the API key in source control or frontend variables.
 
 Wait for Render to report a successful deployment. Open the backend's base URL, such as `https://healthcare-backend-0s3d.onrender.com/`. The base URL should show the Healthcare page and `/assets/app.js` should load successfully. Vercel proxies all paths to this Render app.
 
@@ -72,7 +72,7 @@ Wait for Render to report a successful deployment. Open the backend's base URL, 
 | Login succeeds but the dashboard fails to load | Check the Render deployment logs and confirm the frontend assets were built (`npm ci && npm run build`). |
 | Account works, then disappears after a redeploy/restart | If `DATABASE_URL` is not configured, Render may use ephemeral local SQLite storage. Set the Supabase PostgreSQL connection string in Render and redeploy. |
 
-After deployment, register with a password of at least 10 characters containing uppercase and lowercase letters, a number, and a symbol; an international phone number such as `+919876543210`; and the required country, state, and area. Confirm the Vercel URL reaches `/welcome`, log out, then submit the login form with the same email and password. Do not use real patient information with the current non-persistent deployment.
+After deployment, register with a password of your choice, an international phone number such as `+919876543210`, and the required country, state, and area. The password must not be blank. Confirm the Vercel URL reaches `/welcome`, log out, then submit the login form with the same email and password. Do not use real patient information with the current non-persistent deployment.
 
 ## Validation
 

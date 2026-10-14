@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f7fbff" />
     <title>Healthcare</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css', v=asset_version) }}" />
   </head>
   <body>
     <div id="root"></div>
     <script>window.CARECONNECT = {{ react_props|tojson }};</script>
-    <script type="module" src="{{ url_for('static', filename='app.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='app.js', v=asset_version) }}"></script>
   </body>
 </html>
