@@ -202,7 +202,7 @@ def generate_wellness_suggestions():
         return redirect(url_for("reports.wellness_page"))
     try:
         suggestions = suggest_wellness(log, current_app.config.get("NVIDIA_NIM_API_KEY", ""),
-                                      model=current_app.config.get("NVIDIA_NIM_MODEL", "nvidia/nemotron-nano-12b-v2-vl"))
+                                      model=current_app.config.get("NVIDIA_NIM_MODEL", "meta/llama-3.2-11b-vision-instruct"))
     except RuntimeError as exc:
         context = _dashboard_context(session["user_id"])
         context["ai_wellness_error"] = str(exc)
@@ -264,7 +264,7 @@ def explanation():
         if question:
             try:
                 answer = explain_symptom(question, current_app.config.get("NVIDIA_NIM_API_KEY", ""),
-                                         model=current_app.config.get("NVIDIA_NIM_MODEL", "nvidia/nemotron-nano-12b-v2-vl"))
+                                         model=current_app.config.get("NVIDIA_NIM_MODEL", "meta/llama-3.2-11b-vision-instruct"))
             except RuntimeError as exc:
                 error = str(exc)
     return render_dashboard(reports=reports, page="explanation", question=question, answer=answer, error=error)
@@ -281,7 +281,7 @@ def assistant_api():
         return {"error": "Enter a question first."}, 400
     question = question.strip()[:1000]
     try:
-        model = current_app.config.get("NVIDIA_NIM_MODEL", "nvidia/nemotron-nano-12b-v2-vl")
+        model = current_app.config.get("NVIDIA_NIM_MODEL", "meta/llama-3.2-11b-vision-instruct")
         api_key = current_app.config.get("NVIDIA_NIM_API_KEY", "")
         report_id = payload.get("report_id")
         if report_id is not None:
@@ -398,7 +398,7 @@ def explain_saved_report(report_id):
     if not report:
         abort(404)
     try:
-        model = current_app.config.get("NVIDIA_NIM_MODEL", "nvidia/nemotron-nano-12b-v2-vl")
+        model = current_app.config.get("NVIDIA_NIM_MODEL", "meta/llama-3.2-11b-vision-instruct")
         api_key = current_app.config.get("NVIDIA_NIM_API_KEY", "")
         if report["file_data"] and report["mime_type"]:
             explanation = explain_upload(bytes(report["file_data"]), report["mime_type"], api_key,

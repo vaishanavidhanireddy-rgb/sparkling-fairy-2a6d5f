@@ -46,7 +46,7 @@ def create_app():
         HOST=os.environ.get("HOST", "127.0.0.1"),
         FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY", ""),
         NVIDIA_NIM_API_KEY=os.environ.get("NVIDIA_NIM_API_KEY", ""),
-        NVIDIA_NIM_MODEL=os.environ.get("NVIDIA_NIM_MODEL", "nvidia/nemotron-nano-12b-v2-vl"),
+        NVIDIA_NIM_MODEL=os.environ.get("NVIDIA_NIM_MODEL", "meta/llama-3.2-11b-vision-instruct"),
         HOSPITAL_ADMIN_EMAILS={email.strip().casefold() for email in os.environ.get("HOSPITAL_ADMIN_EMAILS", "").split(",") if email.strip()},
         FIREBASE_AUTH_DOMAIN=os.environ.get("FIREBASE_AUTH_DOMAIN", ""),
         FIREBASE_PROJECT_ID=os.environ.get("FIREBASE_PROJECT_ID", ""),

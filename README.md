@@ -57,7 +57,7 @@ Copy-Item .env.example .env
 python app.py
 ```
 
-Open http://127.0.0.1:5000. Set a long random `SECRET_KEY` and your `NVIDIA_NIM_API_KEY` in `.env` before using AI features. The default NVIDIA NIM model is `nvidia/nemotron-nano-12b-v2-vl`; override it with `NVIDIA_NIM_MODEL` if needed. The app displays an explicit configuration message when the AI key is missing. Google sign-in is optional and requires the Firebase settings described in `FIREBASE_SETUP.md`.
+Open http://127.0.0.1:5000. Set a long random `SECRET_KEY` and your `NVIDIA_NIM_API_KEY` in `.env` before using AI features. The default NVIDIA NIM model is `meta/llama-3.2-11b-vision-instruct`; override it with `NVIDIA_NIM_MODEL` if needed. Use a currently listed vision-capable model. The app displays an explicit configuration message when the AI key is missing. Google sign-in is optional and requires the Firebase settings described in `FIREBASE_SETUP.md`.
 
 Password reset uses a one-time link that expires after 60 minutes. To deliver reset emails, configure `PUBLIC_BASE_URL`, `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS`, `MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_DEFAULT_SENDER` in `.env` with your SMTP provider's values. Without SMTP configuration the UI still responds safely, but no email can be delivered.
 

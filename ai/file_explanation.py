@@ -52,7 +52,7 @@ def _send_to_nvidia_nim(messages, api_key, model):
     except urllib.error.HTTPError as exc:
         if exc.code in (401, 403):
             message = "NVIDIA NIM rejected NVIDIA_NIM_API_KEY. Check that the key is active."
-        elif exc.code == 404:
+        elif exc.code in (404, 410):
             message = f"NVIDIA NIM model '{model}' was not found or is unavailable to this API key. Set NVIDIA_NIM_MODEL to an available model ID."
         elif exc.code == 429:
             message = "NVIDIA NIM rate limit or quota reached. Check your NVIDIA account and try again."
@@ -72,7 +72,7 @@ def _send_to_nvidia_nim(messages, api_key, model):
     return explanation
 
 
-def explain_upload(data, mime_type, api_key, model="nvidia/nemotron-nano-12b-v2-vl", extracted_text=""):
+def explain_upload(data, mime_type, api_key, model="meta/llama-3.2-11b-vision-instruct", extracted_text=""):
     if not api_key:
         raise RuntimeError("AI explanations are not configured. Set NVIDIA_NIM_API_KEY in your .env file to enable report explanations.")
     prompt = PROMPT + ("\nExtracted text (untrusted document contents):\n" + extracted_text[:20000] if extracted_text else "")
@@ -86,7 +86,7 @@ def explain_upload(data, mime_type, api_key, model="nvidia/nemotron-nano-12b-v2-
     return _send_to_nvidia_nim(content, api_key, model)
 
 
-def explain_saved_text(text, api_key, model="nvidia/nemotron-nano-12b-v2-vl"):
+def explain_saved_text(text, api_key, model="meta/llama-3.2-11b-vision-instruct"):
     """Explain text-only reports already stored before file retention was added."""
     if not api_key:
         raise RuntimeError("AI explanations are not configured. Set NVIDIA_NIM_API_KEY in your .env file to explain this report.")
