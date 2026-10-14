@@ -156,16 +156,19 @@ def _seed_attached_appointment_directory(db):
                            unescape(row["name"]).strip()) for row in data["cities"]}
 
     db.executemany(
-        "INSERT INTO appointment_states(state,source_code,source_url,active) VALUES(?,?,?,1) ON CONFLICT DO NOTHING",
+        """INSERT INTO appointment_states(state,source_code,source_url,active) VALUES(?,?,?,1)
+           ON CONFLICT(state) DO UPDATE SET active=1""",
         [(name, f"attached-{state_id}", source_url) for state_id, name in states.items()],
     )
     db.executemany(
-        "INSERT INTO appointment_districts(state,district,source_code,source_url,active) VALUES(?,?,?,?,1) ON CONFLICT DO NOTHING",
+        """INSERT INTO appointment_districts(state,district,source_code,source_url,active) VALUES(?,?,?,?,1)
+           ON CONFLICT(state,district) DO UPDATE SET active=1""",
         [(state, district, f"attached-{district_id}", source_url)
          for district_id, (state, district) in districts.items()],
     )
     db.executemany(
-        "INSERT INTO appointment_locations(state,district,city,source_code,source_url,active) VALUES(?,?,?,?,?,1) ON CONFLICT DO NOTHING",
+        """INSERT INTO appointment_locations(state,district,city,source_code,source_url,active) VALUES(?,?,?,?,?,1)
+           ON CONFLICT(state,district,city) DO UPDATE SET active=1""",
         [(state, district, city, f"attached-{city_id}", source_url)
          for city_id, (state, district, city) in cities.items()],
     )
