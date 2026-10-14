@@ -2,7 +2,6 @@
 import csv
 import hashlib
 import io
-import sqlite3
 from datetime import date, datetime
 from functools import wraps
 
@@ -221,15 +220,14 @@ def book_demo_appointment():
         user_id = session["user_id"]
         key_material = f"{user_id}|{hospital_id}|{doctor_id or 0}|{appointment_date.isoformat()}|{time_slot}"
         booking_key = hashlib.sha256(key_material.encode("utf-8")).hexdigest()
-        try:
-            db.execute(
-                """INSERT INTO appointment_requests
-                   (user_id,hospital_id,doctor_id,appointment_date,time_slot,booking_key,booking_mode,appointment_at,status)
-                   VALUES(?,?,?,?,?,?, 'demo_request', ?, 'demo_pending')""",
-                (user_id, hospital_id, doctor_id, appointment_date.isoformat(), time_slot,
-                 booking_key, f"{appointment_date.isoformat()}T{time_slot}"),
-            )
-        except sqlite3.IntegrityError:
+        result = db.execute(
+            """INSERT INTO appointment_requests
+               (user_id,hospital_id,doctor_id,appointment_date,time_slot,booking_key,booking_mode,appointment_at,status)
+               VALUES(?,?,?,?,?,?, 'demo_request', ?, 'demo_pending') ON CONFLICT DO NOTHING""",
+            (user_id, hospital_id, doctor_id, appointment_date.isoformat(), time_slot,
+             booking_key, f"{appointment_date.isoformat()}T{time_slot}"),
+        )
+        if result.rowcount == 0:
             flash("You already saved this demo request for that hospital, doctor, date, and time preference.", "error")
             return redirect(url_for("appointments.directory"))
     flash("Demo appointment request saved to your account. It was not sent to the hospital and is not a confirmed or available slot.", "success")
@@ -270,7 +268,8 @@ def upload_directory():
             """INSERT INTO appointment_hospitals
                (hospital_name,state,district,city,area,address,phone,category,care_type,specialties,pincode,
                 coordinates,source_type,source_record_id,source_url,imported_at)
-               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO UPDATE SET
+               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+               ON CONFLICT(hospital_name,state,district,city,area) DO UPDATE SET
                address=excluded.address,phone=excluded.phone,category=excluded.category,care_type=excluded.care_type,
                specialties=excluded.specialties,pincode=excluded.pincode,coordinates=excluded.coordinates,
                source_type=excluded.source_type,source_record_id=excluded.source_record_id,
@@ -326,7 +325,8 @@ def upload_doctors():
         db.executemany(
             """INSERT INTO appointment_doctors
                (hospital_id,doctor_name,specialty,registration_number,verification_url,verification_status,source_type)
-               VALUES(?,?,?,?,?,'unverified','admin_uploaded') ON CONFLICT DO UPDATE SET
+               VALUES(?,?,?,?,?,'unverified','admin_uploaded')
+               ON CONFLICT(hospital_id,doctor_name,registration_number) DO UPDATE SET
                specialty=excluded.specialty,verification_url=excluded.verification_url,
                verification_status='unverified',source_type='admin_uploaded'""",
             pending,

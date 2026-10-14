@@ -8,6 +8,8 @@ services:
     envVars:
       - key: SECRET_KEY
         generateValue: true
+      - key: DATABASE_URL
+        sync: false
       - key: MAIL_VERIFICATION_ENABLED
         value: "0"
       - key: MAIL_OTP_ENABLED

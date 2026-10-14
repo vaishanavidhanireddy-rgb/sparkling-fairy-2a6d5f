@@ -27,7 +27,7 @@ Open http://127.0.0.1:5000. Set a long random `SECRET_KEY` in `.env`. AI feature
 
 PDF text extraction uses pypdf. Image OCR uses the Tesseract executable; install Tesseract OCR separately and ensure `tesseract.exe` is on PATH. The AI provider may still read image or PDF files when local extraction returns no text.
 
-Uploads are limited to 2 MB and PDF/JPG/PNG file signatures are checked. Report contents, account records, and AI explanations are stored in the local SQLite database at `quantum_healthcare.sqlite3`, scoped to the signed-in account. Keep this database private and back it up securely. The Render configuration does not attach persistent storage; data saved to its local SQLite file may be lost when the service restarts or is redeployed. Do not use this deployment for real patient records until persistent storage and appropriate privacy/security controls are configured.
+Uploads are limited to 2 MB and PDF/JPG/PNG file signatures are checked. When `DATABASE_URL` is set, account records, reports, and app data use PostgreSQL; without it, local development uses `quantum_healthcare.sqlite3`. Keep database credentials private and configure backups and appropriate privacy/security controls before storing real patient records.
 
 AI explanations are educational and may be wrong. They do not diagnose conditions or prescribe treatment. Discuss reports with a qualified clinician.
 
@@ -43,7 +43,7 @@ Import the GitHub repository into Vercel and set **Root Directory** to the repos
 - Build command: `npm run build`
 - Output directory: `dist`
 
-The frontend defaults to `https://healthcare-backend.onrender.com` as its Flask URL. If Render gives the backend a different URL, set `VITE_BACKEND_URL` to that URL (no trailing slash) in the Vercel project's **Production** environment variables and redeploy.
+Vercel proxies all application pages, assets, login, and API routes to `https://healthcare-backend-0s3d.onrender.com` using `vercel.json`. If Render gives the backend a different URL, update both rewrite destinations in `vercel.json` and redeploy Vercel.
 
 ### Render backend
 
@@ -54,21 +54,23 @@ pip install -r requirements.txt && npm ci && npm run build
 gunicorn healthcare:app
 ```
 
-Wait for Render to report a successful deployment. Open the backend's base URL, such as `https://healthcare-backend.onrender.com/`. The base URL should show the Healthcare page. Registration and login forms submitted from the Vercel frontend navigate to the Flask backend, where the authenticated dashboard is served.
+Create a Supabase project, then add the project's PostgreSQL connection string to Render as the `DATABASE_URL` secret. Use Supabase's **Session pooler** connection string for a long-running Render web service; require SSL and do not use the Supabase anon key or service-role key as the database password. Keep this value in Render's environment settings and never commit it. The app creates and migrates its tables on startup. The production database starts empty, so register accounts again on the deployed app; local SQLite accounts are not copied.
+
+Wait for Render to report a successful deployment. Open the backend's base URL, such as `https://healthcare-backend-0s3d.onrender.com/`. The base URL should show the Healthcare page and `/assets/app.js` should load successfully. Vercel proxies all paths to this Render app.
 
 ### Sign-in errors: what they mean
 
 | What you see | Meaning and next step |
 |---|---|
-| Opening `/login` directly shows `404 Not Found` | Expected for a direct browser visit: the login route accepts a form `POST`, not a page `GET`. Test by submitting the login form on the Vercel page. |
-| Submitting login or registration returns `404` | The backend URL is wrong, or the Render service is not serving this Flask app. Confirm the Vercel `VITE_BACKEND_URL`; then check the Render service's **Events** and **Logs**. |
+| Opening `/login` directly | Redirects to the login form at `/account#login`; submit credentials on that form. |
+| Submitting login or registration returns `404` | A Vercel proxy destination is wrong, or the Render service is not serving this Flask app. Check the destinations in `vercel.json`, then check the Render service's **Events** and **Logs**. |
 | The Render base URL itself shows `404 Not Found` | The configured Render URL/service does not currently serve this Flask app. Confirm the service is deployed from this repository's root and `main` branch. A Vercel log page cannot diagnose Render startup failures. |
 | The form says `Invalid email or password.` | The backend received the request, but that email/password pair is not in its current database. Check spelling/password and whether registration completed on this same deployed backend. Passwords are case-sensitive. |
 | Registration says the account could not be created | The email may already exist, or the backend database write failed. Check Render logs; do not assume account creation succeeded unless the form redirects to the dashboard. |
 | Login succeeds but the dashboard fails to load | Check the Render deployment logs and confirm the frontend assets were built (`npm ci && npm run build`). |
-| Account works, then disappears after a redeploy/restart | Expected risk with the current Render setup: SQLite is stored on the instance and no persistent disk/database is configured. Add persistent storage before relying on accounts or records. |
+| Account works, then disappears after a redeploy/restart | If `DATABASE_URL` is not configured, Render may use ephemeral local SQLite storage. Set the Supabase PostgreSQL connection string in Render and redeploy. |
 
-After deployment, register with a valid email, a password of at least 10 characters, an international phone number such as `+919876543210`, and the required country, state, and area. Confirm it reaches `/dashboard`, log out, then submit the login form with the same email and password. Do not use real patient information with the current non-persistent deployment.
+After deployment, register with a password of at least 10 characters containing uppercase and lowercase letters, a number, and a symbol; an international phone number such as `+919876543210`; and the required country, state, and area. Confirm the Vercel URL reaches `/welcome`, log out, then submit the login form with the same email and password. Do not use real patient information with the current non-persistent deployment.
 
 ## Validation
 
