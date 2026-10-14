@@ -31,7 +31,12 @@ def _generate_text(prompt, api_key, model, feature, max_tokens):
     )
     try:
         with urllib.request.urlopen(req, timeout=45) as response:
-            result = json.loads(response.read().decode("utf-8"))
+            try:
+                result = json.loads(response.read().decode("utf-8"))
+            except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+                raise RuntimeError(
+                    "NVIDIA NIM returned an invalid response. Check the configured model and Render service logs."
+                ) from exc
     except urllib.error.HTTPError as exc:
         if exc.code in (401, 403):
             message = "NVIDIA NIM rejected NVIDIA_NIM_API_KEY. Check that the key is active."

@@ -76,7 +76,13 @@ const api = async (url, options = {}) => {
   try { response = await fetch(url, {credentials: 'same-origin', headers: {Accept: 'application/json', ...(options.body ? {'Content-Type': 'application/json'} : {})}, ...options}); }
   catch { throw new Error('Could not reach the server. Check your connection and sign in again.'); }
   let payload;
-  try { payload = await response.json(); } catch { throw new Error('The server returned an invalid response.'); }
+  try { payload = JSON.parse(await response.text()); }
+  catch {
+    if (response.redirected || response.status === 401) {
+      throw new Error('Your sign-in session expired. Please sign in again.');
+    }
+    throw new Error(`The server returned an invalid response (HTTP ${response.status}). Check the Render service logs.`);
+  }
   if (!response.ok) throw new Error(payload.error || 'The request could not be completed.');
   return payload;
 };
