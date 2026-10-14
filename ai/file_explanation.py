@@ -56,8 +56,10 @@ def _send_to_nvidia_nim(messages, api_key, model):
             message = f"NVIDIA NIM model '{model}' was not found or is unavailable to this API key. Set NVIDIA_NIM_MODEL to an available model ID."
         elif exc.code == 429:
             message = "NVIDIA NIM rate limit or quota reached. Check your NVIDIA account and try again."
+        elif exc.code in (400, 422):
+            message = f"NVIDIA NIM rejected the request (HTTP {exc.code}). Check the model ID and request settings."
         else:
-            message = "NVIDIA NIM could not explain this report. Check the model and API settings, then try again."
+            message = f"NVIDIA NIM could not explain this report (HTTP {exc.code}). Check Render service logs and try again."
         raise RuntimeError(message) from exc
     except (urllib.error.URLError, TimeoutError) as exc:
         raise RuntimeError("NVIDIA NIM is unavailable right now. Please try again.") from exc

@@ -44,8 +44,10 @@ def _generate_text(prompt, api_key, model, feature, max_tokens):
             message = f"NVIDIA NIM model '{model}' was not found or is unavailable to this API key. Set NVIDIA_NIM_MODEL to an available model ID."
         elif exc.code == 429:
             message = "NVIDIA NIM rate limit or quota reached. Check your NVIDIA account and try again."
+        elif exc.code in (400, 422):
+            message = f"NVIDIA NIM rejected the request (HTTP {exc.code}). Check the model ID and request settings."
         else:
-            message = "NVIDIA NIM could not create a response. Check the model and API settings, then try again."
+            message = f"NVIDIA NIM could not create a response (HTTP {exc.code}). Check Render service logs and try again."
         raise RuntimeError(f"{feature}: {message}") from exc
     except (urllib.error.URLError, TimeoutError) as exc:
         raise RuntimeError("NVIDIA NIM is unavailable right now. Please try again.") from exc
